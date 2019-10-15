@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: abd04a7b98dfea647b7efad33aa21b99
+timeCreated: 1517510461
+licenseType: Pro
+ShaderImporter:
+  defaultTextures:
+  - _DiffuseRock: {fileID: 2800000, guid: 186750c4b963061419998c9e4f70b73d, type: 3}
+  - _DiffuseMoss: {fileID: 2800000, guid: 441e7d835e626b54e89d674d8ffb15cd, type: 3}
+  - _NormalRock: {fileID: 2800000, guid: 79d9b67d92116c44f8e90d21d59a879f, type: 3}
+  - _NormalMoss: {fileID: 2800000, guid: f274fcdb3d6760c49813fe377f09561b, type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

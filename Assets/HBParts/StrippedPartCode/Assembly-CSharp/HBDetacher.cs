@@ -1,0 +1,9 @@
+using UnityEngine;
+using UnityEngine.UI;
+using System;
+using System.Collections.Generic; 
+[HBS.SerializePartAttribute]
+public class HBDetacher : Part {
+    [HBS.SerializePartVarAttribute]
+    public GameObject jointTarget;
+}
