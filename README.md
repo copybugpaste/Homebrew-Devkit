@@ -20,7 +20,7 @@ assets are saved as .hbp files
 
 you can find them in 2 places 
 
-official assets are found in "<steam install folder>/HB/StreamingAssets"
+official assets are found in "(steam install folder)/HB/StreamingAssets"
 
 user created assets are found in "C:\Users\<user>\AppData\LocalLow\CopyBugPaste\Homebrew14\UserData"
 
@@ -33,7 +33,7 @@ first open the "from scratch" scene wich can be found in "HBParts/Examples/from 
 
 in the utility bar go: "Homebrew/Asset/Import/Part"
 
-browse to  "<steam install folder>/HB/StreamingAssets/Parts/Engines" and pick "V8.hbp"
+browse to  "(steam install folder)/HB/StreamingAssets/Parts/Engines" and pick "V8.hbp"
 
 you should now have the part open inside the devkit project
 
@@ -49,7 +49,7 @@ first select the root gameObject of the part you want to save
 
 in the utility bar go: "Homebrew/Asset/Export Selected/Part"
 
-save it as "myExportedPart.hbp" in "C:\Users\<user>\AppData\LocalLow\CopyBugPaste\Homebrew14\UserData/MyParts/<here>"
+save it as "myExportedPart.hbp" in "C:\Users\(user)\AppData\LocalLow\CopyBugPaste\Homebrew14\UserData/MyParts/<here>"
 
 
 once saved you should be able to find in your parts browser in the builder
