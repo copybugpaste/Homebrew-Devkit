@@ -281,6 +281,8 @@ namespace HBS {
             bindsRes.Add(typeof(HBGyroAccelerometre),new Func<Reader,object,object>(Ser_hbgyroaccelerometre.Res));
             bindsSer.Add(typeof(HBGyrometre),new Action<Writer,object>(Ser_hbgyrometre.Ser));
             bindsRes.Add(typeof(HBGyrometre),new Func<Reader,object,object>(Ser_hbgyrometre.Res));
+            bindsSer.Add(typeof(HBHealthSensor),new Action<Writer,object>(Ser_hbhealthsensor.Ser));
+            bindsRes.Add(typeof(HBHealthSensor),new Func<Reader,object,object>(Ser_hbhealthsensor.Res));
             bindsSer.Add(typeof(HBHeliPropellor),new Action<Writer,object>(Ser_hbhelipropellor.Ser));
             bindsRes.Add(typeof(HBHeliPropellor),new Func<Reader,object,object>(Ser_hbhelipropellor.Res));
             bindsSer.Add(typeof(HBHelicopterHub),new Action<Writer,object>(Ser_hbhelicopterhub.Ser));

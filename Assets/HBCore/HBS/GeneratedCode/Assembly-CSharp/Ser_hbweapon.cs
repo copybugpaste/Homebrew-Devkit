@@ -7,7 +7,7 @@ namespace HBS {
             if( writer.WriteNull(oo)) { return; }
             HBS.Writer writer_ASXDRGBHU;
             HBWeapon o = (HBWeapon)oo;
-            writer.Write(32);
+            writer.Write(29);
 
             writer.Write("PartProperties");
             writer_ASXDRGBHU = new HBS.Writer();
@@ -87,27 +87,9 @@ namespace HBS {
             writer.Write(writer_ASXDRGBHU.stream.ToArray());
             writer_ASXDRGBHU.Close();
 
-            writer.Write("penetrationConstantAP");
+            writer.Write("desiredPenetrationMMRHA");
             writer_ASXDRGBHU = new HBS.Writer();
-            writer_ASXDRGBHU.Write(o.penetrationConstantAP); //field primitive
-            writer.Write(writer_ASXDRGBHU.stream.ToArray());
-            writer_ASXDRGBHU.Close();
-
-            writer.Write("penetrationConstantHE");
-            writer_ASXDRGBHU = new HBS.Writer();
-            writer_ASXDRGBHU.Write(o.penetrationConstantHE); //field primitive
-            writer.Write(writer_ASXDRGBHU.stream.ToArray());
-            writer_ASXDRGBHU.Close();
-
-            writer.Write("penetrationConstantHEAT");
-            writer_ASXDRGBHU = new HBS.Writer();
-            writer_ASXDRGBHU.Write(o.penetrationConstantHEAT); //field primitive
-            writer.Write(writer_ASXDRGBHU.stream.ToArray());
-            writer_ASXDRGBHU.Close();
-
-            writer.Write("penetrationConstantSABOT");
-            writer_ASXDRGBHU = new HBS.Writer();
-            writer_ASXDRGBHU.Write(o.penetrationConstantSABOT); //field primitive
+            writer_ASXDRGBHU.Write(o.desiredPenetrationMMRHA); //field primitive
             writer.Write(writer_ASXDRGBHU.stream.ToArray());
             writer_ASXDRGBHU.Close();
 
@@ -348,34 +330,10 @@ namespace HBS {
                     } catch { }
                 }
 
-                if (name_ASXDRGBHU == "penetrationConstantAP") {
+                if (name_ASXDRGBHU == "desiredPenetrationMMRHA") {
                     try {
                         reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
-                        o.penetrationConstantAP = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
-                        reader_ASXDRGBHU.Close();
-                    } catch { }
-                }
-
-                if (name_ASXDRGBHU == "penetrationConstantHE") {
-                    try {
-                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
-                        o.penetrationConstantHE = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
-                        reader_ASXDRGBHU.Close();
-                    } catch { }
-                }
-
-                if (name_ASXDRGBHU == "penetrationConstantHEAT") {
-                    try {
-                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
-                        o.penetrationConstantHEAT = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
-                        reader_ASXDRGBHU.Close();
-                    } catch { }
-                }
-
-                if (name_ASXDRGBHU == "penetrationConstantSABOT") {
-                    try {
-                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
-                        o.penetrationConstantSABOT = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
+                        o.desiredPenetrationMMRHA = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
                         reader_ASXDRGBHU.Close();
                     } catch { }
                 }
