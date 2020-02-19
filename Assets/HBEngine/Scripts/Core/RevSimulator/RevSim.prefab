@@ -1,0 +1,389 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &100100000
+Prefab:
+  m_ObjectHideFlags: 1
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications: []
+    m_RemovedComponents: []
+  m_ParentPrefab: {fileID: 0}
+  m_RootGameObject: {fileID: 1643992958695956}
+  m_IsPrefabParent: 1
+--- !u!1 &1643992958695956
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 4405291126405388}
+  - component: {fileID: 114190774287875342}
+  - component: {fileID: 114180185221352970}
+  - component: {fileID: 82972349221933070}
+  m_Layer: 0
+  m_Name: RevSim
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4405291126405388
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1643992958695956}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.93559664, y: 0.77494884, z: -0.42478338}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!82 &82972349221933070
+AudioSource:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1643992958695956}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 1
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 0
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 0
+--- !u!114 &114180185221352970
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1643992958695956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da92aa52d8339a24b8627f4d1ca041ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  throttle: 0
+  shift: 0
+  accel: 0
+  turbo: 0
+  turboBlowoffValve: 0
+  weight: 1
+  useGearShiftSound: 1
+  shiftGearThrottleDelay: 0.08
+  gearShift:
+    clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.3
+    startShift: 0.261
+    endShift: 1
+    startPitch: 1
+    endPitch: 1
+  useTurboSound: 1
+  additionalTurboPitch: 0.5
+  turboAudio:
+    clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.396
+    startShift: 0.405
+    endShift: 1
+    startPitch: 0.84
+    endPitch: 1
+  turboBlowoffValveAudio:
+    clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.016
+    startShift: 0
+    endShift: 1
+    startPitch: 1
+    endPitch: 1.82
+  useInternalTurboSimulation: 1
+  turboSim:
+    turboAccelShift: 1.5
+    turboDecelShift: 3
+    turboBlowoffValveExeedingShift: 0.03
+    turboSmoothFactor: 0.25
+    turboBlowoffValveSmoothFactor: 0.15
+  useExhaustPops: 1
+  exhaustPops:
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.35
+    startShift: 0
+    endShift: 1
+    startPitch: 1
+    endPitch: 1
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.375
+    startShift: 0
+    endShift: 1
+    startPitch: 1
+    endPitch: 1
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.404
+    startShift: 0
+    endShift: 1
+    startPitch: 1
+    endPitch: 1
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.413
+    startShift: 0
+    endShift: 1
+    startPitch: 1
+    endPitch: 1
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.426
+    startShift: 0
+    endShift: 1
+    startPitch: 1
+    endPitch: 1
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 0.417
+    startShift: 0
+    endShift: 1
+    startPitch: 1
+    endPitch: 1
+  useInternalExhaustPopSimulation: 1
+  exhaustPopSim:
+    exhaustPopMinThrottle: 0.4
+    exhaustPopMinShiftDecel: 0.3
+    minExhaustPopDelay: 1
+    chanseFactor: 1
+    popChanse: 0
+  entries:
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 1
+    startShift: 0
+    endShift: 0.054
+    startPitch: 1
+    endPitch: 1.5
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 1
+    startShift: 0.024
+    endShift: 0.304
+    startPitch: 1
+    endPitch: 1.2
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 1
+    startShift: 0.156
+    endShift: 0.451
+    startPitch: 1
+    endPitch: 1.2
+  - clip:
+      clip: {fileID: 0}
+      name: 
+    volume: 1
+    startShift: 0.316
+    endShift: 1
+    startPitch: 1
+    endPitch: 1.5
+  parametricEqualizerA:
+    bypass: 0
+    centerFrequencyA: 3000
+    octaveRangeA: 3
+    dBGainA: 0.5
+    centerFrequencyB: 3000
+    octaveRangeB: 1
+    dBGainB: 1
+  parametricEqualizerB:
+    bypass: 0
+    centerFrequencyA: 300
+    octaveRangeA: 2
+    dBGainA: 1
+    centerFrequencyB: 300
+    octaveRangeB: 2
+    dBGainB: 3
+  source: {fileID: 82972349221933070}
+  showHelpers: 1
+  helperIdleRPM: 830
+  helperRedlineRPM: 8300
+--- !u!114 &114190774287875342
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1643992958695956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5f5919f4edc164ca1b79b96d50f620, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  throttle: 0
+  gear: 0
+  torqueCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0.7241379
+      inSlope: 0
+      outSlope: 0.6549712
+      tangentMode: 69
+    - serializedVersion: 2
+      time: 0.10858606
+      value: 0.79525864
+      inSlope: 0.53240323
+      outSlope: 0.53240323
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 0.22427589
+      value: 0.8426724
+      inSlope: 0.40983522
+      outSlope: 0.36062694
+      tangentMode: 69
+    - serializedVersion: 2
+      time: 0.33184713
+      value: 0.8814655
+      inSlope: 0.41514504
+      outSlope: 0.41514504
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 0.43738875
+      value: 0.9310345
+      inSlope: 0.46966317
+      outSlope: 0.45226786
+      tangentMode: 69
+    - serializedVersion: 2
+      time: 0.5469896
+      value: 0.98060346
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 0.6606498
+      value: 0.9633621
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 0.7793841
+      value: 0.98275864
+      inSlope: 0.17183724
+      outSlope: 0.17183724
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 0.88695526
+      value: 1.0021552
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 0.997571
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maxTorque: 465.63
+  redlineRPM: 8300
+  idleRPM: 830
+  throttleCutoffRPM: 10
+  throttleCutoffSeconds: 0.05
+  smoothInternalAudioThrottleSpeedFactor: 0.15
+  smoothIneralRPMSpeedFactor: 0.25
+  internalInertia: 0.2
+  loadInertia: 0.35
+  counterTorque: 500
+  shiftUpRPM: 6000
+  shiftDownRPM: 3000
+  overallGearRatio: 0.291
+  gearRatios:
+  - 0.256
+  - 0.431
+  - 0.621
+  - 0.781
+  - 1
+  - 1.136
+  engineAudioClip: {fileID: 114180185221352970}

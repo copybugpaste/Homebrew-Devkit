@@ -135,6 +135,18 @@ namespace HBS {
             bindsRes.Add(typeof(UnityEngine.UI.PositionAsUV1),new Func<Reader,object,object>(Ser_unityengine_ui_positionasuv1.Res));
             bindsSer.Add(typeof(UnityEngine.UI.Shadow),new Action<Writer,object>(Ser_unityengine_ui_shadow.Ser));
             bindsRes.Add(typeof(UnityEngine.UI.Shadow),new Func<Reader,object,object>(Ser_unityengine_ui_shadow.Res));
+            bindsSer.Add(typeof(EngineAudioClip),new Action<Writer,object>(Ser_engineaudioclip.Ser));
+            bindsRes.Add(typeof(EngineAudioClip),new Func<Reader,object,object>(Ser_engineaudioclip.Res));
+            bindsSer.Add(typeof(EngineAudioClip.ExhaustPopSim),new Action<Writer,object>(Ser_engineaudioclip_exhaustpopsim.Ser));
+            bindsRes.Add(typeof(EngineAudioClip.ExhaustPopSim),new Func<Reader,object,object>(Ser_engineaudioclip_exhaustpopsim.Res));
+            bindsSer.Add(typeof(EngineAudioClip.TurboSim),new Action<Writer,object>(Ser_engineaudioclip_turbosim.Ser));
+            bindsRes.Add(typeof(EngineAudioClip.TurboSim),new Func<Reader,object,object>(Ser_engineaudioclip_turbosim.Res));
+            bindsSer.Add(typeof(EngineAudioClip.AudioEntry),new Action<Writer,object>(Ser_engineaudioclip_audioentry.Ser));
+            bindsRes.Add(typeof(EngineAudioClip.AudioEntry),new Func<Reader,object,object>(Ser_engineaudioclip_audioentry.Res));
+            bindsSer.Add(typeof(EngineAudioClip.Filter),new Action<Writer,object>(Ser_engineaudioclip_filter.Ser));
+            bindsRes.Add(typeof(EngineAudioClip.Filter),new Func<Reader,object,object>(Ser_engineaudioclip_filter.Res));
+            bindsSer.Add(typeof(RevAudioClip),new Action<Writer,object>(Ser_revaudioclip.Ser));
+            bindsRes.Add(typeof(RevAudioClip),new Func<Reader,object,object>(Ser_revaudioclip.Res));
             bindsSer.Add(typeof(HBBuilder.Adjustable),new Action<Writer,object>(Ser_hbbuilder_adjustable.Ser));
             bindsRes.Add(typeof(HBBuilder.Adjustable),new Func<Reader,object,object>(Ser_hbbuilder_adjustable.Res));
             bindsSer.Add(typeof(HBBuilder.Node),new Action<Writer,object>(Ser_hbbuilder_node.Ser));

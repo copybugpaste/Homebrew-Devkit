@@ -12,6 +12,9 @@ namespace HBS {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //wills erialize this class properly
     public class SerializeAttribute : System.Attribute { }
 
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)] //will serialize this cmass ( this can be used to not serialize someting in unity but do serialize it here )
+    public class SerializeVarAttribute : System.Attribute { }
+
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //will serialize this class as part ( only saves properties )
     public class SerializePartAttribute : System.Attribute { }
 
@@ -34,6 +37,10 @@ namespace HBS {
             specialCaseUnserializers.Clear();
             specialCaseSerializers.Add(typeof(Mesh), new Action<Writer, object>(MeshExtension.SaveMesh));
             specialCaseUnserializers.Add(typeof(Mesh), new Func<Reader, Type, object, object>(MeshExtension.LoadMesh));
+
+            specialCaseSerializers.Add(typeof(RevAudioClip), new Action<Writer, object>(RevAudioClipExtension.SaveRevAudioClip));
+            specialCaseUnserializers.Add(typeof(RevAudioClip), new Func<Reader, Type, object, object>(RevAudioClipExtension.LoadRevAudioClip));
+
             //specialCaseSerializers.Add(typeof(HBWorld.TerrainTile), new Action<Writer, object>(TerrainTileExtension.SaveTerrainTile));
             //specialCaseUnserializers.Add(typeof(HBWorld.TerrainTile), new Func<Reader, Type, object, object>(TerrainTileExtension.LoadTerrainTile));
         }
