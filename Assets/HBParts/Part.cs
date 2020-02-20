@@ -211,6 +211,75 @@ public class Part : MonoBehaviour {
     public List<Property> backupProperties = new List<Property>();
     [NonSerialized]
     public bool backedup = false;
+    
+    public void PropertiesToBytes( HBS.Writer writer) {
+        if( properties == null ) { writer.Write(0); return; }
+        writer.Write(properties.Count);
+        foreach (var p in properties) {
+            if (p.assetTypes == null) {
+                writer.Write(0);
+            } else {
+                writer.Write(p.assetTypes.Count);
+            }
+            foreach( var at in p.assetTypes ) {
+                writer.Write((int)at);
+            }
+
+            writer.Write(p.pname);
+            writer.Write(p.descriptiveName);
+            writer.Write((int)p.collapserName);
+            writer.Write((int)p.type);
+            writer.Write(p.value);
+            writer.Write(p.minValue);
+            writer.Write(p.maxValue);
+            writer.Write(p.enumTypeName);
+            writer.Write(p.buttonFunction);
+            writer.Write((int)p.linkType);
+            writer.Write(p.arrayBehavior);
+            writer.Write(p.hidden);
+            writer.Write(p.nonserialized);
+            writer.Write(p.defaultValue);
+            writer.Write(p.thisSingleLink);
+            writer.Write(p.data);
+            writer.Write(p.assetResourcePath);
+        }
+    }
+
+    public void BytesToProperties( HBS.Reader reader) {
+        properties = new List<Property>();
+        var count = (int)reader.Read();
+        for( var i = 0; i < count; i++ ) {
+
+            var assetTypeCount = (int)reader.Read();
+            var assetTypes = new List<HBAssetTypes>();
+            for ( var o = 0; o < assetTypeCount; o++) {
+                assetTypes.Add((HBAssetTypes)(int)reader.Read());
+            }
+
+            var p = new Property() {
+                pname = (string)reader.Read(),
+                descriptiveName = (string)reader.Read(),
+                collapserName = (PropertyCollapseName)(int)reader.Read(),
+                type = (PropertyType)(int)reader.Read(),
+                value = (string)reader.Read(),
+                minValue = (string)reader.Read(),
+                maxValue = (string)reader.Read(),
+                enumTypeName = (string)reader.Read(),
+                buttonFunction = (string)reader.Read(),
+                linkType = (PropertyLinkType)(int)reader.Read(),
+                arrayBehavior = (bool)reader.Read(),
+                assetTypes = assetTypes,
+                hidden = (bool)reader.Read(),
+                nonserialized = (bool)reader.Read(),
+                defaultValue = (string)reader.Read(),
+                thisSingleLink = (bool)reader.Read(),
+                data = (string)reader.Read(),
+                assetResourcePath = (string)reader.Read(),
+            };
+
+            properties.Add(p);
+        }
+    }
 
     public void PropertiesToXElement(XElement parent) {
         //save only value and name

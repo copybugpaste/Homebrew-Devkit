@@ -11,7 +11,7 @@ namespace HBS {
 
             writer.Write("clip");
             writer_ASXDRGBHU = new HBS.Writer();
-            HBS.Serializer.specialCaseSerializers[typeof(RevAudioClip)].Invoke(writer_ASXDRGBHU,o.clip); //field special case
+            HBS.Ser_revaudioclip.Ser( writer_ASXDRGBHU , o.clip); //field
             writer.Write(writer_ASXDRGBHU.stream.ToArray());
             writer_ASXDRGBHU.Close();
 
@@ -61,7 +61,7 @@ namespace HBS {
                 if (name_ASXDRGBHU == "clip") {
                     try {
                         reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
-                        o.clip = (RevAudioClip)HBS.Serializer.specialCaseUnserializers[typeof(RevAudioClip)].Invoke(reader_ASXDRGBHU,typeof(RevAudioClip),o.clip); //field special case 
+                        o.clip = (RevAudioClip)HBS.Ser_revaudioclip.Res( reader_ASXDRGBHU ); //field
                         reader_ASXDRGBHU.Close();
                     } catch { }
                 }

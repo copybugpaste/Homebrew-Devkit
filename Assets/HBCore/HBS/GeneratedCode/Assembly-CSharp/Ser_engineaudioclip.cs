@@ -7,7 +7,43 @@ namespace HBS {
             if( writer.WriteNull(oo)) { return; }
             HBS.Writer writer_ASXDRGBHU;
             EngineAudioClip o = (EngineAudioClip)oo;
-            writer.Write(25);
+            writer.Write(31);
+
+            writer.Write("throttle");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.throttle); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
+
+            writer.Write("shift");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.shift); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
+
+            writer.Write("accel");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.accel); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
+
+            writer.Write("turbo");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.turbo); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
+
+            writer.Write("turboBlowoffValve");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.turboBlowoffValve); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
+
+            writer.Write("weight");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.weight); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
 
             writer.Write("useGearShiftSound");
             writer_ASXDRGBHU = new HBS.Writer();
@@ -181,6 +217,54 @@ namespace HBS {
                     name_ASXDRGBHU = (string)reader.Read();
                     data_ASXDRGBHU = (byte[])reader.Read();
                 } catch { continue; }
+
+                if (name_ASXDRGBHU == "throttle") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.throttle = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+
+                if (name_ASXDRGBHU == "shift") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.shift = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+
+                if (name_ASXDRGBHU == "accel") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.accel = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+
+                if (name_ASXDRGBHU == "turbo") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.turbo = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+
+                if (name_ASXDRGBHU == "turboBlowoffValve") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.turboBlowoffValve = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+
+                if (name_ASXDRGBHU == "weight") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.weight = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
 
                 if (name_ASXDRGBHU == "useGearShiftSound") {
                     try {

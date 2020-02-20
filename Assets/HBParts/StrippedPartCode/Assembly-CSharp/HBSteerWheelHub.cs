@@ -16,4 +16,5 @@ public class HBSteerWheelHub : Part {
     public GameObject leftHandGoal;
     [HBS.SerializePartVarAttribute]
     public GameObject rightHandGoal;
+    
 }

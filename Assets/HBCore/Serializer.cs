@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -11,9 +12,6 @@ namespace HBS {
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //wills erialize this class properly
     public class SerializeAttribute : System.Attribute { }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)] //will serialize this cmass ( this can be used to not serialize someting in unity but do serialize it here )
-    public class SerializeVarAttribute : System.Attribute { }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //will serialize this class as part ( only saves properties )
     public class SerializePartAttribute : System.Attribute { }
@@ -37,10 +35,6 @@ namespace HBS {
             specialCaseUnserializers.Clear();
             specialCaseSerializers.Add(typeof(Mesh), new Action<Writer, object>(MeshExtension.SaveMesh));
             specialCaseUnserializers.Add(typeof(Mesh), new Func<Reader, Type, object, object>(MeshExtension.LoadMesh));
-
-            specialCaseSerializers.Add(typeof(RevAudioClip), new Action<Writer, object>(RevAudioClipExtension.SaveRevAudioClip));
-            specialCaseUnserializers.Add(typeof(RevAudioClip), new Func<Reader, Type, object, object>(RevAudioClipExtension.LoadRevAudioClip));
-
             //specialCaseSerializers.Add(typeof(HBWorld.TerrainTile), new Action<Writer, object>(TerrainTileExtension.SaveTerrainTile));
             //specialCaseUnserializers.Add(typeof(HBWorld.TerrainTile), new Func<Reader, Type, object, object>(TerrainTileExtension.LoadTerrainTile));
         }
@@ -119,6 +113,154 @@ namespace HBS {
 
             w.Save(path);
             w.Close();
+
+        }
+
+        public static IEnumerator LoadGameObjectAsync(string path, System.Action<GameObject> ret ) {
+
+            if (serializeMethod == null || unserializeMethod == null) {
+                HookToSerializeMethods();
+            }
+            if (serializeMethod == null || unserializeMethod == null) { yield break; }
+            if (File.Exists(path) == false) { yield break; }
+
+            Reader r = new Reader(path);
+            //try {
+                int prefix = (int)r.Read();
+                if (prefix > 0) {
+                    #region load gameobject v1
+                    int gameObjectCount = (int)r.Read();
+                    GameObject[] objs = new GameObject[gameObjectCount];
+                    for (int i = 0; i < gameObjectCount; i++) {
+                        objs[i] = new GameObject("Child" + i.ToString());
+                        if (i == 0) {
+                            currentRoot = objs[i];
+                            objs[i].SetActive(false);
+                            objs[i].transform.parent = currentRoot.transform;
+                        } else {
+                            object parentFromPath = UnserializePath(r);
+                            if (parentFromPath != null) {
+                                objs[i].transform.SetParent((Transform)parentFromPath);
+                            } else {
+                                Debug.LogError("coudnt find path for " + objs[i].ToString());
+                                objs[i].transform.parent = currentRoot.transform;
+                            }
+                        }
+                        //try {
+                            int componentCount = (int)r.Read();
+                            for (int ii = 0; ii < componentCount; ii++) {
+                                yield return new WaitForEndOfFrame();
+                                string typeName = (string)r.Read();
+                                Type ctype = Type.GetType(typeName);
+                                if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
+                                if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
+                                if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
+                                if (ctype != typeof(Transform)) {
+                                    objs[i].AddComponent(ctype);
+                                }
+                            }
+                        //} catch (System.Exception e) {
+                        //    Debug.LogWarning(e.ToString());
+                        //}
+                    }
+
+                    
+
+                    for (int i = 0; i < gameObjectCount; i++) {
+
+                        yield return new WaitForEndOfFrame();
+
+                        //try {
+                            Unserialize(r, typeof(GameObject), (object)objs[i]);
+                            int componentCount = (int)r.Read();
+                            //Component[] comps = objs[i].GetComponents<Component>();
+                            for (int ii = 0; ii < componentCount; ii++) {
+
+                                yield return new WaitForEndOfFrame();
+
+                                string typeName = (string)r.Read();
+                                byte[] compData = (byte[])r.Read();
+                                try {
+                                    Reader r2 = new Reader(compData);
+                                    Type ctype = Type.GetType(typeName);
+                                    if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
+                                    if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
+                                    if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
+                                    Component c = objs[i].GetComponent(ctype);
+
+                                    Unserialize(r2, ctype, (object)c);
+                                    r2.Close();
+                                } catch (System.Exception e) {
+                                    Debug.LogWarning(e.ToString());
+                                }
+                            }
+                        //} catch (System.Exception e) {
+                        //    Debug.LogWarning(e.ToString());
+                        //}
+                    }
+
+                    #endregion
+                } else {
+                    #region load gameobject v0
+                    int gameObjectCount = (int)r.Read();
+                    GameObject[] objs = new GameObject[gameObjectCount];
+                    for (int i = 0; i < gameObjectCount; i++) {
+                        objs[i] = new GameObject("Child" + i.ToString());
+                        if (i == 0) {
+                            currentRoot = objs[i];
+                            objs[i].SetActive(false);
+                            objs[i].transform.parent = currentRoot.transform;
+                        } else {
+                            object parentFromPath = UnserializePath(r);
+                            if (parentFromPath != null) {
+                                objs[i].transform.SetParent((Transform)parentFromPath);
+                            } else {
+                                Debug.LogError("coudnt find path for " + objs[i].ToString());
+                                objs[i].transform.parent = currentRoot.transform;
+                            }
+                        }
+                        try {
+                            int componentCount = (int)r.Read();
+                            for (int ii = 0; ii < componentCount; ii++) {
+                                string typeName = (string)r.Read();
+                                Type ctype = Type.GetType(typeName);
+                                if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
+                                if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
+                                if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
+                                if (ctype != typeof(Transform)) {
+                                    objs[i].AddComponent(ctype);
+                                }
+                            }
+                        } catch (System.Exception e) {
+                            Debug.LogWarning(e.ToString());
+                        }
+                    }
+                    for (int i = 0; i < gameObjectCount; i++) {
+                        try {
+                            Unserialize(r, typeof(GameObject), (object)objs[i]);
+                            int componentCount = (int)r.Read();
+                            Component[] comps = objs[i].GetComponents<Component>();
+                            for (int ii = 0; ii < componentCount; ii++) {
+                                string typeName = (string)r.Read();
+                                Type ctype = Type.GetType(typeName);
+                                Component c = comps[ii];
+                                Unserialize(r, ctype, (object)c);
+                            }
+                        } catch (System.Exception e) {
+                            Debug.LogWarning(e.ToString());
+                        }
+                    }
+                    #endregion
+                }
+            //} catch (System.Exception e) {
+            //    Debug.LogWarning(e.ToString());
+            //}
+            r.Close();
+
+            ret(currentRoot);
+
+            yield break;
+            //return currentRoot;
 
         }
 

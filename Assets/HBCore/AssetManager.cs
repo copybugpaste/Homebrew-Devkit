@@ -41,25 +41,21 @@ namespace HBWorld {
 		    //load extensions 
 		    HBS.Serializer.LoadExtensions();
 
-            //bool preAsync = HBS.MeshExtension.async;
+            bool preAsync = HBS.MeshExtension.async;
             HBS.MeshExtension.async = false;
 
-            //bool preAsync2 = HBS.RevAudioClipExtension.async;
-            HBS.RevAudioClipExtension.async = false;
 
-
-            //create cache folder
-            string c = CreateCacheFolder();
+		    //create cache folder
+		    string c = CreateCacheFolder();
 
 		    //setup mesh extension
 		    HBS.MeshExtension.savePath = c;
-            HBS.RevAudioClipExtension.savePath = c;
 
             //setup terraintile extension
             //HBS.TerrainTileExtension.savePath = c;
 
-            //unzip to
-            HBS.Serializer.UnzipFolderTo(path,c);
+		    //unzip to
+		    HBS.Serializer.UnzipFolderTo(path,c);
 
 		    //load gameObject
 		    GameObject o = HBS.Serializer.LoadGameObject(c+"/data.txt");
@@ -69,10 +65,9 @@ namespace HBWorld {
 
             //reset extension
             HBS.MeshExtension.async = false;
-            HBS.RevAudioClipExtension.async = false;
 
-            //assign asset comp if not already
-            if ( o != null ) {
+		    //assign asset comp if not already
+            if( o != null ) {
                 Asset a = o.GetComponent<Asset>();
                 if (a == null) { a = o.AddComponent<Asset>(); }
                 a.path = path;
@@ -105,13 +100,12 @@ namespace HBWorld {
 		
 		    //setup mesh extension
 		    HBS.MeshExtension.savePath = cache;
-            HBS.RevAudioClipExtension.savePath = cache;
 
             //setup terraintile extension
             //HBS.TerrainTileExtension.savePath = cache;
-
-            //save gameObject
-            HBS.Serializer.SaveGameObject(cache+"/data.txt",obj);
+		
+		    //save gameObject
+		    HBS.Serializer.SaveGameObject(cache+"/data.txt",obj);
 		
 		    //zip the folder
 		    HBS.Serializer.ZipFolderTo(cache,path);
@@ -274,4 +268,5 @@ public static class IDManager {
         ret[31] = letters[random.Value.Next(0, 26)];
         return new string(ret);
     }
+    
 }

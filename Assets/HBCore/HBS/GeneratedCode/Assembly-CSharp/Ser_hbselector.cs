@@ -9,9 +9,9 @@ namespace HBS {
             HBSelector o = (HBSelector)oo;
             writer.Write(4);
 
-            writer.Write("PartProperties");
+            writer.Write("PartPropertiesBytes");
             writer_ASXDRGBHU = new HBS.Writer();
-            writer_ASXDRGBHU.Write(o.PropertiesToString());
+            o.PropertiesToBytes(writer_ASXDRGBHU); //writer_ASXDRGBHU.Write(o.PropertiesToString());
             writer.Write(writer_ASXDRGBHU.stream.ToArray());
             writer_ASXDRGBHU.Close();
 
@@ -50,6 +50,13 @@ namespace HBS {
                     try {
                         reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
                         o.PropertiesFromString((string)reader_ASXDRGBHU.Read());
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+                if (name_ASXDRGBHU == "PartPropertiesBytes") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.BytesToProperties(reader_ASXDRGBHU);
                         reader_ASXDRGBHU.Close();
                     } catch { }
                 }
