@@ -60,8 +60,33 @@ namespace HBWorld {
 		    //unzip to
 		    HBS.Serializer.UnzipFolderTo(path,c);
 
-		    //load gameObject
-		    GameObject o = HBS.Serializer.LoadGameObject(c+"/data.txt");
+            //load gameObject
+            var filePath = c + "/data.txt";
+            GameObject o = null;
+
+            //check if its a regular hbp 
+            if ( File.Exists(filePath)) {
+
+                o = HBS.Serializer.LoadGameObject(filePath);
+
+            } else {
+
+                //check if its a vehicle hbp wrap
+                var exportedPath = c + "/exported.hbp";
+                if( File.Exists(exportedPath)) {
+
+                    //extract vehicle exported version
+                    var c2 = CreateCacheFolder();
+                    HBS.Serializer.UnzipFolderTo(exportedPath, c2);
+
+                    //load vehicle exported version
+                    filePath = c2 + "/data.txt";
+                    if (File.Exists(filePath)) {
+                        HBS.MeshExtension.savePath = c2;
+                        o = HBS.Serializer.LoadGameObject(filePath);
+                    }
+                }
+            }
 
 		    //delete cache folder
             DeleteCacheFolder(c);

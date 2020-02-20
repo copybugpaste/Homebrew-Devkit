@@ -203,13 +203,14 @@ namespace HBWorld {
 
             if (AssetManager.FileExists(path) == false) { onReturn(null, "cant find file at: " + path); yield break; }
 
-            string persistentDataPath = Application.persistentDataPath;
+            var persistentDataPath = Application.persistentDataPath;
 
             yield return Ninja.JumpBack;
 
 
             //create cache folder
-            string c = AssetManager.CreateCacheFolder(persistentDataPath);
+            var c = AssetManager.CreateCacheFolder(persistentDataPath);
+            var c2 = AssetManager.CreateCacheFolder(persistentDataPath);
 
             //setup mesh extension to async
             HBS.MeshExtension.savePath = c;
@@ -217,31 +218,70 @@ namespace HBWorld {
 
             //unzip to
             HBS.Serializer.UnzipFolderTo(path, c);
-
-            yield return Ninja.JumpToUnity;
-
-            PostProgress(onProgress, 0.02f);
-
+            
             //load gameObject
+
+            //check if its a regular hbp 
+            var filePath = c + "/data.txt";
             GameObject o = null;
-            yield return HBS.Serializer.LoadGameObjectAsync(c + "/data.txt", 5, (ret) => {
-                o = ret;
-            }, (progress) => {
-                PostProgress(onProgress, 0.02f + (progress * 0.78f));
-            });
-            //GameObject o = HBS.Serializer.LoadGameObject(c + "/data.txt");
+
+            //check if its a regular hbp 
+            if (File.Exists(filePath)) {
+
+                yield return Ninja.JumpToUnity;
+                PostProgress(onProgress, 0.02f);
+
+                yield return HBS.Serializer.LoadGameObjectAsync(filePath, 5, (ret) => {
+                    o = ret;
+                }, (progress) => {
+                    PostProgress(onProgress, 0.02f + (progress * 0.78f));
+                });
+
+            } else {
+
+                //check if its a vehicle hbp wrap
+                var exportedPath = c + "/exported.hbp";
+                if (File.Exists(exportedPath)) {
+
+                    //extract vehicle exported version
+                    HBS.Serializer.UnzipFolderTo(exportedPath, c2);
+
+                    //load vehicle exported version
+                    filePath = c2 + "/data.txt";
+                    if (File.Exists(filePath)) {
+
+                        yield return Ninja.JumpToUnity;
+                        HBS.MeshExtension.savePath = c2;
+                        PostProgress(onProgress, 0.02f);
+
+                        yield return HBS.Serializer.LoadGameObjectAsync(filePath, 5, (ret) => {
+                            o = ret;
+                        }, (progress) => {
+                            PostProgress(onProgress, 0.02f + (progress * 0.78f));
+                        });
+                    }
+                }
+            }
+            
 
             if (o != null) {
                 curInstantiateGameObjectRoot = o;
                 //call the async load method on MeshExtension
-                foreach (KeyValuePair<string, Mesh> v in HBS.MeshExtension.asyncTodo) {
+                var cc = 0;
+
+                foreach (var v in HBS.MeshExtension.asyncTodo) {
+                    
                     yield return this.StartCoroutineAsync(MeshUtilities.LoadH3dOntoMeshAsync(v.Key, v.Value));
+                    
+                    PostProgress(onProgress, 0.8f + (cc / (float)HBS.MeshExtension.asyncTodo.Count * 0.15f));
+                    cc++;
                 }
 
                 yield return Ninja.JumpBack;
 
                 //delete cache folder
                 AssetManager.DeleteCacheFolder(c);
+                AssetManager.DeleteCacheFolder(c2);
 
                 yield return Ninja.JumpToUnity;
 
@@ -252,25 +292,29 @@ namespace HBWorld {
                 }
 
                 var allRenderers = o.GetComponentsInChildren<Renderer>(true);
+                var allEnabledRenderers = new List<Renderer>();
                 foreach (var r in allRenderers) {
-                    r.enabled = false;
+                    if( r.enabled ) {
+                        allEnabledRenderers.Add(r);
+                        r.enabled = false;
+                    }
                 }
 
                 o.SetActive(true);
 
-                var cc = 0;
+                cc = 0;
                 foreach (var mc in allMeshColliders) {
 
                     yield return new WaitForEndOfFrame();
 
-                    PostProgress(onProgress, 0.8f + (cc / (float)allMeshColliders.Length * 0.2f));
+                    PostProgress(onProgress, 0.95f + (cc / (float)allMeshColliders.Length * 0.05f));
                     cc++;
                     mc.enabled = true;
                 }
 
 
                 //assign asset comp if not already
-                Asset a = o.GetComponent<Asset>();
+                var a = o.GetComponent<Asset>();
                 if (a == null) { a = o.AddComponent<Asset>(); }
                 a.path = path;
                 
@@ -278,8 +322,7 @@ namespace HBWorld {
 
                 PostProgress(onProgress, 1f);
 
-                foreach (var r in allRenderers) {
-                    
+                foreach (var r in allEnabledRenderers) {                    
                     r.enabled = true;
                 }
 
@@ -305,13 +348,14 @@ namespace HBWorld {
 
             if (AssetManager.FileExists(path) == false) { onReturn(null, "cant find file at: "+path); yield break; }
 
-            string persistentDataPath = Application.persistentDataPath;
+            var persistentDataPath = Application.persistentDataPath;
             
             yield return Ninja.JumpBack;
 
             
             //create cache folder
-            string c = AssetManager.CreateCacheFolder(persistentDataPath);
+            var c = AssetManager.CreateCacheFolder(persistentDataPath);
+            var c2 = AssetManager.CreateCacheFolder(persistentDataPath);
 
             //setup mesh extension to async
             HBS.MeshExtension.savePath = c;
@@ -320,17 +364,53 @@ namespace HBWorld {
             //unzip to
             HBS.Serializer.UnzipFolderTo(path, c);
 
-            yield return Ninja.JumpToUnity;
-
-            PostProgress(onProgress, 0.02f);
 
             //load gameObject
-            GameObject o = HBS.Serializer.LoadGameObject(c + "/data.txt");
+            //GameObject o = HBS.Serializer.LoadGameObject(c + "/data.txt");
 
-            if( o != null ) {
+            //check if its a regular hbp 
+            var filePath = c + "/data.txt";
+            GameObject o = null;
+
+            //check if its a regular hbp 
+            if (File.Exists(filePath)) {
+                
+                yield return Ninja.JumpToUnity;
+
+                PostProgress(onProgress, 0.02f);
+
+                o = HBS.Serializer.LoadGameObject(filePath);
+
+            } else {
+
+                //check if its a vehicle hbp wrap
+                var exportedPath = c + "/exported.hbp";
+                if (File.Exists(exportedPath)) {
+
+                    //extract vehicle exported version
+                    HBS.Serializer.UnzipFolderTo(exportedPath, c2);
+
+                    //load vehicle exported version
+                    filePath = c2 + "/data.txt";
+                    if (File.Exists(filePath)) {
+                        HBS.MeshExtension.savePath = c2;
+                        
+                        yield return Ninja.JumpToUnity;
+
+                        PostProgress(onProgress, 0.02f);
+
+                        o = HBS.Serializer.LoadGameObject(filePath);
+                    }
+                    
+                }
+            }
+
+
+
+            if ( o != null ) {
                 curInstantiateGameObjectRoot = o;
                 //call the async load method on MeshExtension
-                foreach (KeyValuePair<string, Mesh> v in HBS.MeshExtension.asyncTodo) {
+                foreach (var v in HBS.MeshExtension.asyncTodo) {
                     yield return this.StartCoroutineAsync(MeshUtilities.LoadH3dOntoMeshAsync(v.Key, v.Value));
                 }
 
@@ -338,6 +418,7 @@ namespace HBWorld {
 
                 //delete cache folder
                 AssetManager.DeleteCacheFolder(c);
+                AssetManager.DeleteCacheFolder(c2);
 
                 yield return Ninja.JumpToUnity;
 
@@ -362,7 +443,7 @@ namespace HBWorld {
 
 
                 //assign asset comp if not already
-                Asset a = o.GetComponent<Asset>();
+                var a = o.GetComponent<Asset>();
                 if (a == null) { a = o.AddComponent<Asset>(); }
                 a.path = path;
 
