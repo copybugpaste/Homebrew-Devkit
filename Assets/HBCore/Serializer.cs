@@ -23,7 +23,7 @@ namespace HBS {
     public class SerializeComponentOnlyAttribute : System.Attribute { }
 
     public static class Serializer {
-        public static bool debug = false;
+        public static bool debug = true;
         public static int prefix = 1;
         public static MethodInfo serializeMethod;
         public static MethodInfo unserializeMethod;
@@ -117,25 +117,9 @@ namespace HBS {
 
         }
 
-        public static bool CheckWait(int speed , ref int cc ) {
-            cc++;
-            return cc % Mathf.Max(1,speed) == 0;
-        }
+        public static IEnumerator SaveGameObjectAsync(string path, GameObject gameObject, int speed, System.Action<GameObject> ret, System.Action<float> onProgress) {
 
-        static void PostProgress(System.Action<float> onProgress, float f) {
-            if (onProgress != null) {
-                onProgress(f);
-            }
-        }
-
-        public static void LogWarning(object o) {
-            if( debug ) {
-                Debug.LogWarning(o);
-            }
-        }
-
-        public static IEnumerator LoadGameObjectAsync(string path, int speed, System.Action<GameObject> ret , System.Action<float> onProgress) {
-
+            
             PostProgress(onProgress, 0);
 
             var cc = 0;
@@ -144,183 +128,135 @@ namespace HBS {
                 HookToSerializeMethods();
             }
             if (serializeMethod == null || unserializeMethod == null) { yield break; }
-            if (File.Exists(path) == false) { yield break; }
 
-            Reader r = new Reader(path);
-            int prefix = (int)r.Read();
+            Writer w = new Writer();
+            currentRoot = gameObject;
+            List<GameObject> children = GetChildGameObjects(gameObject);
+            children.Insert(0, currentRoot);
+            w.Write(prefix);
             if (prefix > 0) {
-                #region load gameobject v1
-                int gameObjectCount = (int)r.Read();
-                GameObject[] objs = new GameObject[gameObjectCount];
-                for (int i = 0; i < gameObjectCount; i++) {
+                #region save gameobject v1
+                w.Write(children.Count);
 
-                    PostProgress(onProgress, (float)i/ (float)gameObjectCount * 0.5f);
+                var ii = 0;
+                foreach (GameObject g in children) {
 
-                    if ( CheckWait(speed*2,ref cc) ) {
+                    PostProgress(onProgress, (float)ii / (float)children.Count * 0.5f);
+
+                    if (CheckWait(speed * 2, ref cc)) {
                         yield return new WaitForEndOfFrame();
-                    }
-
-                    objs[i] = new GameObject("Child" + i.ToString());
-                    if (i == 0) {
-                        currentRoot = objs[i];
-                        objs[i].SetActive(false);
-                        objs[i].transform.parent = currentRoot.transform;
-                    } else {
-                        object parentFromPath = UnserializePath(r);
-                        if (parentFromPath != null) {
-                            objs[i].transform.SetParent((Transform)parentFromPath);
-                        } else {
-                            Debug.LogError("coudnt find path for " + objs[i].ToString());
-                            objs[i].transform.parent = currentRoot.transform;
-                        }
-                    }
-                    int componentCount = (int)r.Read();
-                    for (int ii = 0; ii < componentCount; ii++) {
-
-                        if (CheckWait(speed*2, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        string typeName = (string)r.Read();
-                        Type ctype = Type.GetType(typeName);
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                        if (ctype != typeof(Transform)) {
-                            objs[i].AddComponent(ctype);
-                        }
-                    }
-                }
-                
-                for (int i = 0; i < gameObjectCount; i++) {
-
-                    PostProgress(onProgress, 0.5f + ((float)i / (float)gameObjectCount * 0.5f));
-
-                    if (CheckWait(speed, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-                    int componentCount = 0;
-                    Component[] comps = new Component[0];
-                    try { 
-                        Unserialize(r, typeof(GameObject), (object)objs[i]);
-                        componentCount = (int)r.Read();
-                        comps = objs[i].GetComponents<Component>();
-                    } catch (Exception e) {
-                        LogWarning(e.ToString());
-                    }
-                    for (int ii = 0; ii < componentCount; ii++) {
-
-                        if (CheckWait(speed, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        string typeName = (string)r.Read();
-                        byte[] compData = (byte[])r.Read();
-                        try {
-                            Reader r2 = new Reader(compData);
-                            Type ctype = Type.GetType(typeName);
-                            if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                            if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                            if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                            Component c = comps[ii];//objs[i].GetComponent(ctype);
-
-                            Unserialize(r2, ctype, (object)c);
-                            r2.Close();
-                        } catch (System.Exception e) {
-                            LogWarning(e.ToString());
-                        }
-                    }
-                }
-
-                #endregion
-            } else {
-                #region load gameobject v0
-                int gameObjectCount = (int)r.Read();
-                GameObject[] objs = new GameObject[gameObjectCount];
-                for (int i = 0; i < gameObjectCount; i++) {
-
-                    PostProgress(onProgress, (float)i / (float)gameObjectCount * 0.5f);
-
-                    if (CheckWait(speed, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-
-                    objs[i] = new GameObject("Child" + i.ToString());
-                    if (i == 0) {
-                        currentRoot = objs[i];
-                        objs[i].SetActive(false);
-                        objs[i].transform.parent = currentRoot.transform;
-                    } else {
-                        object parentFromPath = UnserializePath(r);
-                        if (parentFromPath != null) {
-                            objs[i].transform.SetParent((Transform)parentFromPath);
-                        } else {
-                            Debug.LogError("coudnt find path for " + objs[i].ToString());
-                            objs[i].transform.parent = currentRoot.transform;
-                        }
-                    }
-                    int componentCount = (int)r.Read();
-                    for (int ii = 0; ii < componentCount; ii++) {
-
-                        if (CheckWait(speed, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        string typeName = (string)r.Read();
-                        Type ctype = Type.GetType(typeName);
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                        if (ctype != typeof(Transform)) {
-                            objs[i].AddComponent(ctype);
-                        }
-                    }
-                }
-                for (int i = 0; i < gameObjectCount; i++) {
-
-                    PostProgress(onProgress, 0.5f + ((float)i / (float)gameObjectCount * 0.5f));
-
-                    if (CheckWait(speed, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-                    int componentCount = 0;
-                    Component[] comps = new Component[0];
-                    try {
-                        Unserialize(r, typeof(GameObject), (object)objs[i]);
-                        componentCount = (int)r.Read();
-                        comps = objs[i].GetComponents<Component>();
-                    } catch (Exception e) {
-                        LogWarning(e.ToString());
-                    }
-                    for (int ii = 0; ii < componentCount; ii++) {
-
-                        if (CheckWait(speed, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-                        
-                        try {
-                            string typeName = (string)r.Read();
-                            Type ctype = Type.GetType(typeName);
-                            Component c = comps[ii];
-                            Unserialize(r, ctype, (object)c);
-
-                        } catch(Exception e) {
-                            LogWarning(e.ToString());
-                        }
                     }
                     
+                    if (g != currentRoot) {
+                        SerializePath(w, g.transform.parent);
+                    }
+                    List<Component> components = GetComponents(g);
+                    w.Write(components.Count);
+                    foreach (Component c in components) {
+
+                        if (CheckWait(speed * 2, ref cc)) {
+                            yield return new WaitForEndOfFrame();
+                        }
+
+                        w.Write(c.GetType().FullName);
+                    }
+
+                    ii++;
                 }
+
+                ii = 0;
+                foreach (GameObject g in children) {
+
+                    PostProgress(onProgress, 0.5f + ((float)ii / (float)children.Count * 0.5f));
+
+                    if (CheckWait(speed * 2, ref cc)) {
+                        yield return new WaitForEndOfFrame();
+                    }
+
+                    Serialize(w, g);
+                    List<Component> components = GetComponents(g);
+                    w.Write(components.Count);
+                    var i = 0;
+                    foreach (Component c in components) {
+
+                        if (CheckWait(speed, ref cc)) {
+                            yield return new WaitForEndOfFrame();
+                        }
+
+                        w.Write(c.GetType().FullName);
+                        Writer w2 = new Writer();
+                        Serialize(w2, c);
+                        w.Write(w2.stream.ToArray());
+                        w2.Close();
+                        i++;
+                    }
+                    ii++;
+                }
+                #endregion
+            } else {
+                #region save gameobject v0
+                w.Write(children.Count);
+
+                var ii = 0;
+                foreach (GameObject g in children) {
+
+                    PostProgress(onProgress, (float)ii / (float)children.Count * 0.5f);
+
+                    if (CheckWait(speed * 2, ref cc)) {
+                        yield return new WaitForEndOfFrame();
+                    }
+
+                    if (g != currentRoot) {
+                        SerializePath(w, g.transform.parent);
+                    }
+                    List<Component> components = GetComponents(g);
+                    w.Write(components.Count);
+                    foreach (Component c in components) {
+
+                        if (CheckWait(speed * 2, ref cc)) {
+                            yield return new WaitForEndOfFrame();
+                        }
+
+                        w.Write(c.GetType().FullName);
+                    }
+
+                    ii++;
+                }
+
+                ii = 0;
+                foreach (GameObject g in children) {
+
+                    PostProgress(onProgress, 0.5f + ((float)ii / (float)children.Count * 0.5f));
+
+                    if (CheckWait(speed, ref cc)) {
+                        yield return new WaitForEndOfFrame();
+                    }
+
+                    Serialize(w, g);
+                    List<Component> components = GetComponents(g);
+                    w.Write(components.Count);
+                    int i = 0;
+                    foreach (Component c in components) {
+
+                        if (CheckWait(speed, ref cc)) {
+                            yield return new WaitForEndOfFrame();
+                        }
+
+                        w.Write(c.GetType().FullName);
+                        Serialize(w, c);
+                        i++;
+                    }
+
+                    ii++;
+                }
+
                 #endregion
             }
 
-            r.Close();
-
-            PostProgress(onProgress, 1);
-            ret(currentRoot);
-
-            yield break;
-
+            w.Save(path);
+            w.Close();
         }
+
 
         public static GameObject LoadGameObject(string path) {
 
@@ -455,62 +391,33 @@ namespace HBS {
             }
             return currentRoot;
         }
-        /*  upgraded to mores stable method using prefix change
-        public static void SaveGameObject(string path, GameObject gameObject) {
 
-           
-            if (serializeMethod == null || unserializeMethod == null) {
-                HookToSerializeMethods();
-            }
-            if (serializeMethod == null || unserializeMethod == null) { return; }
-            
-            Writer w = new Writer();
-            currentRoot = gameObject;
-            List<GameObject> children = GetChildGameObjects(gameObject);
-            children.Insert(0, currentRoot);
-            w.Write(prefix);
-            w.Write(children.Count);
-            foreach (GameObject g in children) {
-                if (g != currentRoot) {
-                    SerializePath(w, g.transform.parent);
-                }
-                List<Component> components = GetComponents(g);
-                w.Write(components.Count);
-                foreach (Component c in components) {
-                    w.Write(c.GetType().FullName);
-                }
-            }
-            
-            foreach (GameObject g in children) {
-                Serialize(w, g);
-                List<Component> components = GetComponents(g);
-                w.Write(components.Count);
-                int i = 0;
-                foreach (Component c in components) {
-                    w.Write(c.GetType().FullName);
-                    Serialize(w, c);
-                    i++;
-                }
-            }
-            
-            w.Save(path);
-            w.Close();
-        }
+        public static IEnumerator LoadGameObjectAsync(string path, int speed, System.Action<GameObject> ret, System.Action<float> onProgress) {
 
-        public static GameObject LoadGameObject(string path) {
+            PostProgress(onProgress, 0);
+
+            var cc = 0;
 
             if (serializeMethod == null || unserializeMethod == null) {
                 HookToSerializeMethods();
             }
-            if (serializeMethod == null || unserializeMethod == null) { return null; }
-            if (File.Exists(path) == false) { return null; }
-            
+            if (serializeMethod == null || unserializeMethod == null) { yield break; }
+            if (File.Exists(path) == false) { yield break; }
+
             Reader r = new Reader(path);
-            try {
-                int prefix = (int)r.Read();
+            int prefix = (int)r.Read();
+            if (prefix > 0) {
+                #region load gameobject v1
                 int gameObjectCount = (int)r.Read();
                 GameObject[] objs = new GameObject[gameObjectCount];
                 for (int i = 0; i < gameObjectCount; i++) {
+
+                    PostProgress(onProgress, (float)i / (float)gameObjectCount * 0.5f);
+
+                    if (CheckWait(speed * 2, ref cc)) {
+                        yield return new WaitForEndOfFrame();
+                    }
+
                     objs[i] = new GameObject("Child" + i.ToString());
                     if (i == 0) {
                         currentRoot = objs[i];
@@ -525,43 +432,154 @@ namespace HBS {
                             objs[i].transform.parent = currentRoot.transform;
                         }
                     }
+                    int componentCount = (int)r.Read();
+                    for (int ii = 0; ii < componentCount; ii++) {
+
+                        if (CheckWait(speed * 2, ref cc)) {
+                            yield return new WaitForEndOfFrame();
+                        }
+
+                        string typeName = (string)r.Read();
+                        Type ctype = Type.GetType(typeName);
+                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
+                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
+                        if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
+                        if (ctype != typeof(Transform)) {
+                            objs[i].AddComponent(ctype);
+                        }
+                    }
+                }
+
+                for (int i = 0; i < gameObjectCount; i++) {
+
+                    PostProgress(onProgress, 0.5f + ((float)i / (float)gameObjectCount * 0.5f));
+
+                    if (CheckWait(speed, ref cc)) {
+                        yield return new WaitForEndOfFrame();
+                    }
+                    int componentCount = 0;
+                    Component[] comps = new Component[0];
                     try {
-                        int componentCount = (int)r.Read();
-                        for (int ii = 0; ii < componentCount; ii++) {
-                            string typeName = (string)r.Read();
+                        Unserialize(r, typeof(GameObject), (object)objs[i]);
+                        componentCount = (int)r.Read();
+                        comps = objs[i].GetComponents<Component>();
+                    } catch (Exception e) {
+                        LogWarning(e.ToString());
+                    }
+                    for (int ii = 0; ii < componentCount; ii++) {
+
+                        if (CheckWait(speed, ref cc)) {
+                            yield return new WaitForEndOfFrame();
+                        }
+
+                        string typeName = (string)r.Read();
+                        byte[] compData = (byte[])r.Read();
+                        try {
+                            Reader r2 = new Reader(compData);
                             Type ctype = Type.GetType(typeName);
                             if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
                             if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
                             if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                            if (ctype != typeof(Transform)) {
-                                objs[i].AddComponent(ctype);
-                            }
+                            Component c = comps[ii];//objs[i].GetComponent(ctype);
+
+                            Unserialize(r2, ctype, (object)c);
+                            r2.Close();
+                        } catch (System.Exception e) {
+                            LogWarning(e.ToString());
                         }
-                    } catch (System.Exception e) {
-                        Debug.LogWarning(e.ToString());
+                    }
+                }
+
+                #endregion
+            } else {
+                #region load gameobject v0
+                int gameObjectCount = (int)r.Read();
+                GameObject[] objs = new GameObject[gameObjectCount];
+                for (int i = 0; i < gameObjectCount; i++) {
+
+                    PostProgress(onProgress, (float)i / (float)gameObjectCount * 0.5f);
+
+                    if (CheckWait(speed, ref cc)) {
+                        yield return new WaitForEndOfFrame();
+                    }
+
+                    objs[i] = new GameObject("Child" + i.ToString());
+                    if (i == 0) {
+                        currentRoot = objs[i];
+                        objs[i].SetActive(false);
+                        objs[i].transform.parent = currentRoot.transform;
+                    } else {
+                        object parentFromPath = UnserializePath(r);
+                        if (parentFromPath != null) {
+                            objs[i].transform.SetParent((Transform)parentFromPath);
+                        } else {
+                            Debug.LogError("coudnt find path for " + objs[i].ToString());
+                            objs[i].transform.parent = currentRoot.transform;
+                        }
+                    }
+                    int componentCount = (int)r.Read();
+                    for (int ii = 0; ii < componentCount; ii++) {
+
+                        if (CheckWait(speed, ref cc)) {
+                            yield return new WaitForEndOfFrame();
+                        }
+
+                        string typeName = (string)r.Read();
+                        Type ctype = Type.GetType(typeName);
+                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
+                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
+                        if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
+                        if (ctype != typeof(Transform)) {
+                            objs[i].AddComponent(ctype);
+                        }
                     }
                 }
                 for (int i = 0; i < gameObjectCount; i++) {
+
+                    PostProgress(onProgress, 0.5f + ((float)i / (float)gameObjectCount * 0.5f));
+
+                    if (CheckWait(speed, ref cc)) {
+                        yield return new WaitForEndOfFrame();
+                    }
+                    int componentCount = 0;
+                    Component[] comps = new Component[0];
                     try {
                         Unserialize(r, typeof(GameObject), (object)objs[i]);
-                        int componentCount = (int)r.Read();
-                        Component[] comps = objs[i].GetComponents<Component>();
-                        for (int ii = 0; ii < componentCount; ii++) {
+                        componentCount = (int)r.Read();
+                        comps = objs[i].GetComponents<Component>();
+                    } catch (Exception e) {
+                        LogWarning(e.ToString());
+                    }
+                    for (int ii = 0; ii < componentCount; ii++) {
+
+                        if (CheckWait(speed, ref cc)) {
+                            yield return new WaitForEndOfFrame();
+                        }
+
+                        try {
                             string typeName = (string)r.Read();
                             Type ctype = Type.GetType(typeName);
                             Component c = comps[ii];
                             Unserialize(r, ctype, (object)c);
+
+                        } catch (Exception e) {
+                            LogWarning(e.ToString());
                         }
-                    } catch (System.Exception e) {
-                        Debug.LogWarning(e.ToString());
                     }
+
                 }
-            } catch (System.Exception e) {
-                Debug.LogWarning(e.ToString());
+                #endregion
             }
+
             r.Close();
-            return currentRoot;
-        }*/
+
+            PostProgress(onProgress, 1);
+            ret(currentRoot);
+
+            yield break;
+
+        }
+
 
         public static void ZipFolderTo(string p, string t) {
             try {
@@ -725,6 +743,24 @@ namespace HBS {
             }
             return ret;
         }
+        
+        public static bool CheckWait(int speed, ref int cc) {
+            cc++;
+            return cc % Mathf.Max(1, speed) == 0;
+        }
+
+        static void PostProgress(System.Action<float> onProgress, float f) {
+            if (onProgress != null) {
+                onProgress(f);
+            }
+        }
+
+        public static void LogWarning(object o) {
+            if (debug) {
+                Debug.LogWarning(o);
+            }
+        }
+
     }
 
     public class Reader : IDisposable {

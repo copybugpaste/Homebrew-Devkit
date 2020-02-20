@@ -11,11 +11,15 @@ public class SerializerTest : MonoBehaviour {
 
     public Image image;
 
+    public GameObject asset;
+
     public void Update() {
         if(Input.GetKeyDown(KeyCode.Space)) {
             AssetManager.InstantiateAssetAsyncSmooth(p, (o, err) => {
                 Debug.Log(err);
                 if (o != null) {
+
+                    asset = o;
                     o.transform.position = Vector3.zero;
                     o.transform.rotation = Quaternion.identity;
                 }
@@ -27,9 +31,18 @@ public class SerializerTest : MonoBehaviour {
             AssetManager.InstantiateAssetAsync(p, (o, err) => {
                 Debug.Log(err);
                 if (o != null) {
+
+                    asset = o;
                     o.transform.position = Vector3.zero;
                     o.transform.rotation = Quaternion.identity;
                 }
+            }, (progress) => {
+                image.fillAmount = progress;
+            });
+        }
+        if (Input.GetKeyDown(KeyCode.S)) {
+            AssetManager.SaveAssetAsyncSmooth(p, "GameObject", asset, true, (o, err) => {
+                Debug.Log(err);
             }, (progress) => {
                 image.fillAmount = progress;
             });
@@ -44,6 +57,7 @@ public class SerializerTest : MonoBehaviour {
         AssetManager.InstantiateAssetAsyncSmooth(path,(o,err) => {
             Debug.Log(err);
             if( o != null ) {
+                asset = o;
                 o.transform.position = Vector3.zero;
                 o.transform.rotation = Quaternion.identity;
             }
@@ -52,6 +66,15 @@ public class SerializerTest : MonoBehaviour {
         });
         
     }
-    
-    
+
+    [ContextMenu("export")]
+    public void SaveGameObject() {
+        var path = UnityEditor.EditorUtility.SaveFilePanel("save part", Application.streamingAssetsPath + "/Assets/GameObjects/","untitled", "hbp");
+        if (path == "") { return; }
+        AssetManager.SaveAssetAsyncSmooth(path, "GameObject", asset, true, (o, err) => {
+            Debug.Log(err);
+        }, (progress) => {
+            image.fillAmount = progress;
+        });
+    }   
 }

@@ -16,10 +16,22 @@ namespace HBS {
         public static void SaveMesh(HBS.Writer writer , object oo) {
             if( writer.WriteNull(oo)) { return; }
             Mesh o = (Mesh)oo;
+            var path = "";
+
+            if (async) {
+                path = savePath + "/" + o.name + ".h3d";
+
+                writer.Write(o.name);
+                if (asyncTodo.ContainsKey(path) == false) {
+                    asyncTodo.Add(path, (Mesh)o);
+                }
+                return;
+            }
+
             string hash = MeshUtilities.CalcHash(o);
             writer.Write(hash);
-          
-            string path = savePath + "/" + hash + ".h3d";
+            path = savePath + "/" + hash + ".h3d";
+            
             if (File.Exists(path) == false) { //dont resave thesame mesh
                 MeshUtilities.SaveH3d(o, path);
             }
@@ -36,7 +48,7 @@ namespace HBS {
             }
             //load ur custum mesh file
             string path = savePath + "/" + hash + ".h3d";
-            byte[] data = File.ReadAllBytes(path);
+            //byte[] data = File.ReadAllBytes(path);
             Mesh o = null;
             if (async) {
                 //if we wana load async then add path and new empty mesh to async todo

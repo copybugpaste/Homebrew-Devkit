@@ -39,13 +39,21 @@ namespace HBWorld {
             while (true) {
                 if (que.Count() == 0) { yield return new WaitForEndOfFrame(); continue; }
                 curQueID = que.Keys.First();
-                QueData q = que.ContainsKey(curQueID) ? que[curQueID] : null;
+                var q = que.ContainsKey(curQueID) ? que[curQueID] : null;
                 if (q == null) { yield return new WaitForEndOfFrame(); continue; }
-                if(q.smooth ) {
-                    yield return this.StartCoroutineAsync(InstantiateAssetAsyncSmooth(q.assetPath, q.onReturn, q.onProgress), out curInstantiateTask);
-                } else {
+                if( q.isSave ) {
+                    if(q.smooth ) {
+                        yield return this.StartCoroutineAsync(SaveAssetAsyncSmooth(q.assetPath, q.assetType,q.obj,q.makeHBM, q.onReturn, q.onProgress), out curInstantiateTask);
+                    } else {
 
-                    yield return this.StartCoroutineAsync(InstantiateAssetAsync(q.assetPath, q.onReturn, q.onProgress), out curInstantiateTask);
+                    }
+                } else {
+                    if (q.smooth) {
+                        yield return this.StartCoroutineAsync(InstantiateAssetAsyncSmooth(q.assetPath, q.onReturn, q.onProgress), out curInstantiateTask);
+                    } else {
+
+                        yield return this.StartCoroutineAsync(InstantiateAssetAsync(q.assetPath, q.onReturn, q.onProgress), out curInstantiateTask);
+                    }
                 }
                 if (que.ContainsKey(curQueID)) { que.Remove(curQueID); }
                 yield return new WaitForEndOfFrame();
@@ -53,16 +61,23 @@ namespace HBWorld {
         }
 
         //Instantiating Assets Async
+        public string InvokeSaveAssetAsyncSmooth(string path, string assetType, GameObject obj, bool makeHbm, System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
+
+            var queID = IDManager.GetNewIDShort();
+            que.Add(queID, new QueData(path, onReturn, onProgress, true,true,assetType,obj,makeHbm));
+            return queID;
+        }
+
         public string InvokeInstantiateAssetAsyncSmooth(string path, System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
 
-            string queID = IDManager.GetNewIDShort();
-            que.Add(queID, new QueData(path, onReturn, onProgress,true));
+            var queID = IDManager.GetNewIDShort();
+            que.Add(queID, new QueData(path, onReturn, onProgress, true, false,null,null,false));
             return queID;
         }
         public string InvokeInstantiateAssetAsync(string path, System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
             
-            string queID = IDManager.GetNewIDShort();
-            que.Add(queID, new QueData(path, onReturn, onProgress,false));
+            var queID = IDManager.GetNewIDShort();
+            que.Add(queID, new QueData(path, onReturn, onProgress,false,false, null, null, false));
             return queID;
         }
         public void CancelInstantiateAssetAsync(string id) {
@@ -82,6 +97,100 @@ namespace HBWorld {
                 onProgress(f);
             }
 
+        }
+
+        IEnumerator SaveAssetAsyncSmooth(string path,string assetType, GameObject obj,bool makeHbm, System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
+            yield return Ninja.JumpToUnity;
+
+            PostProgress(onProgress, 0.01f);
+
+            var startTime = Time.time;
+
+            string persistentDataPath = Application.persistentDataPath;
+
+
+            //clone
+            obj = GameObject.Instantiate(obj);
+
+            obj.SetActive(false);
+
+            //remove Asset components before saving
+            Asset[] assets = obj.GetComponentsInChildren<Asset>(true);
+            foreach (Asset a in assets) {
+#if UNITY_EDITOR
+                GameObject.DestroyImmediate(a, false);
+#else
+                GameObject.Destroy(a); 
+#endif
+            }
+            
+            yield return Ninja.JumpBack;
+            
+            //create cache folder
+            string cache = AssetManager.CreateCacheFolder(persistentDataPath);
+
+            yield return Ninja.JumpToUnity;
+
+            //setup mesh extension
+            HBS.MeshExtension.savePath = cache;
+            HBS.MeshExtension.async = true;
+            
+            //save gameObject
+            yield return HBS.Serializer.SaveGameObjectAsync(cache + "/data.txt", obj,5, (ret) => {
+               
+            }, (progress) => {
+                PostProgress(onProgress, 0.02f + (progress * 0.78f));
+            });
+
+
+            var cc = 0;
+            foreach (KeyValuePair<string, Mesh> v in HBS.MeshExtension.asyncTodo) {
+
+                yield return new WaitForEndOfFrame();
+
+                PostProgress(onProgress, 0.8f + (((float)cc/(float)HBS.MeshExtension.asyncTodo.Count) * 0.2f));
+
+                var data = new byte[0];
+
+                yield return this.StartCoroutineAsync(MeshUtilities.SaveH3dAsync( v.Value,(stream)=> {
+                    data = stream.ToArray();
+                }));
+
+                yield return Ninja.JumpBack;
+                
+                File.WriteAllBytes(v.Key, data);
+
+                yield return Ninja.JumpToUnity;
+
+                cc++;
+            }
+
+            yield return Ninja.JumpBack;
+
+
+            //zip the folder
+            HBS.Serializer.ZipFolderTo(cache, path);
+
+            //write HBM file
+            if (makeHbm) {
+                AssetManager.CreatMetaFile(path, assetType);
+            }
+
+            //delete the folder
+            AssetManager.DeleteCacheFolder(cache);
+
+            yield return Ninja.JumpToUnity;
+
+            //reset meshextension
+            HBS.MeshExtension.asyncTodo.Clear();
+            HBS.MeshExtension.async = false;
+
+            //Destroy clone
+            GameObject.DestroyImmediate(obj);
+
+            PostProgress(onProgress, 1f);
+            onReturn(obj, "succes");
+            HBS.Serializer.LogWarning("saved asset t:" + (Time.time - startTime).ToString());
         }
 
         IEnumerator InstantiateAssetAsyncSmooth(string path, System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
@@ -118,7 +227,7 @@ namespace HBWorld {
             yield return HBS.Serializer.LoadGameObjectAsync(c + "/data.txt", 5, (ret) => {
                 o = ret;
             }, (progress) => {
-                PostProgress(onProgress, 0.02f + (progress * 0.88f));
+                PostProgress(onProgress, 0.02f + (progress * 0.78f));
             });
             //GameObject o = HBS.Serializer.LoadGameObject(c + "/data.txt");
 
@@ -142,6 +251,10 @@ namespace HBWorld {
                     mc.enabled = false;
                 }
 
+                var allRenderers = o.GetComponentsInChildren<Renderer>(true);
+                foreach (var r in allRenderers) {
+                    r.enabled = false;
+                }
 
                 o.SetActive(true);
 
@@ -150,9 +263,9 @@ namespace HBWorld {
 
                     yield return new WaitForEndOfFrame();
 
-                    PostProgress(onProgress, 0.9f + (cc / (float)allMeshColliders.Length * 0.1f));
+                    PostProgress(onProgress, 0.8f + (cc / (float)allMeshColliders.Length * 0.2f));
                     cc++;
-                    mc.enabled = false;
+                    mc.enabled = true;
                 }
 
 
@@ -160,23 +273,26 @@ namespace HBWorld {
                 Asset a = o.GetComponent<Asset>();
                 if (a == null) { a = o.AddComponent<Asset>(); }
                 a.path = path;
-
-                //reset meshExtension back to normal
-                //HBS.MeshExtension.cache.Clear();
-                HBS.MeshExtension.asyncTodo.Clear();
-                HBS.MeshExtension.async = false;
-
+                
                 curInstantiateGameObjectRoot = null;
 
                 PostProgress(onProgress, 1f);
 
-                yield return Ninja.JumpToUnity;
+                foreach (var r in allRenderers) {
+                    
+                    r.enabled = true;
+                }
+
             }
 
+            yield return Ninja.JumpToUnity;
+
+            HBS.MeshExtension.asyncTodo.Clear();
+            HBS.MeshExtension.async = false;
 
             //call onReturn
             onReturn(o, "succes");
-            Debug.Log("loaded asset t:" + (Time.time - startTime).ToString());
+            HBS.Serializer.LogWarning("loaded asset t:" + (Time.time - startTime).ToString());
         }
         
         IEnumerator InstantiateAssetAsync(string path, System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
@@ -266,7 +382,7 @@ namespace HBWorld {
 
             //call onReturn
             onReturn(o, "succes");
-            
+            HBS.Serializer.LogWarning("loaded asset t:" + (Time.time - startTime).ToString());
         }
 
         //Utilities
@@ -275,12 +391,21 @@ namespace HBWorld {
             public System.Action<GameObject, string> onReturn;
             public System.Action<float> onProgress;
             public bool smooth;
+            public bool isSave;
+            public string assetType;
+            public GameObject obj;
+            public bool makeHBM;
 
-            public QueData(string assetPath, System.Action<GameObject, string> onReturn, System.Action<float> onProgress,bool smooth) {
+            public QueData(string assetPath, System.Action<GameObject, string> onReturn, System.Action<float> onProgress, bool smooth, bool isSave,string assetType,GameObject obj,bool makeHBM) {
                 this.assetPath = assetPath;
                 this.onReturn = onReturn;
                 this.onProgress = onProgress;
                 this.smooth = smooth;
+                this.isSave = isSave;
+                this.assetType = assetType;
+                this.obj = obj;
+                this.makeHBM = makeHBM;
+
             }
         }
     }

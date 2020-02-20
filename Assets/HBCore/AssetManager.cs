@@ -81,9 +81,14 @@ namespace HBWorld {
 
 		    return o;
 	    }
-	    
-	    //saving Assets
-	    public static void SaveAsset( string path , string assetType , GameObject obj , bool makeHbm = true  ) {
+
+        //saving Assets
+        public static string SaveAssetAsyncSmooth(string path, string assetType, GameObject obj, bool makeHbm , System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
+            if (instance == null) { onReturn(null, "No AssetManagerInstance"); Debug.LogError("No AssetManagerInstance"); return ""; }
+            return instance.InvokeSaveAssetAsyncSmooth(path, assetType, obj, makeHbm, onReturn, onProgress);
+        }
+
+        public static void SaveAsset( string path , string assetType , GameObject obj , bool makeHbm = true  ) {
 
 		    //remove Asset components before saving
 		    Asset[] assets = obj.GetComponentsInChildren<Asset>();
