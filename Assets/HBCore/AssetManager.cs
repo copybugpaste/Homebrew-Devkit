@@ -11,8 +11,7 @@ namespace HBWorld {
     public static class AssetManager {
 
         public static AssetManagerInstance instance; //used for async
-
-
+        
         public static List<string> cacheFolders = new List<string>();
 
         public static void OnApplicationQuit() {
@@ -29,9 +28,13 @@ namespace HBWorld {
 
 
         //Instantiating Assets
-        public static string InstantiateAssetAsync(string path, System.Action<GameObject, string> onReturn) {
+        public static string InstantiateAssetAsyncSmooth(string path, System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
             if (instance == null) { onReturn(null, "No AssetManagerInstance"); Debug.LogError("No AssetManagerInstance"); return ""; }
-            return instance.InvokeInstantiateAssetAsync(path, onReturn);
+            return instance.InvokeInstantiateAssetAsyncSmooth(path, onReturn, onProgress);
+        }
+        public static string InstantiateAssetAsync(string path, System.Action<GameObject, string> onReturn, System.Action<float> onProgress = null) {
+            if (instance == null) { onReturn(null, "No AssetManagerInstance"); Debug.LogError("No AssetManagerInstance"); return ""; }
+            return instance.InvokeInstantiateAssetAsync(path, onReturn, onProgress);
         }
         public static void CancelInstantiateAsync(string id) {
             if (instance == null) { Debug.LogError("No AssetManagerInstance"); return; }
