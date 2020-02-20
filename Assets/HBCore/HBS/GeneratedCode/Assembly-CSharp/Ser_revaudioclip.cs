@@ -7,7 +7,7 @@ namespace HBS {
             if( writer.WriteNull(oo)) { return; }
             HBS.Writer writer_ASXDRGBHU;
             RevAudioClip o = (RevAudioClip)oo;
-            writer.Write(2);
+            writer.Write(5);
 
             writer.Write("clip");
             writer_ASXDRGBHU = new HBS.Writer();
@@ -18,6 +18,24 @@ namespace HBS {
             writer.Write("name");
             writer_ASXDRGBHU = new HBS.Writer();
             writer_ASXDRGBHU.Write(o.name); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
+
+            writer.Write("length");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.length); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
+
+            writer.Write("channels");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.channels); //field primitive
+            writer.Write(writer_ASXDRGBHU.stream.ToArray());
+            writer_ASXDRGBHU.Close();
+
+            writer.Write("sampleCount");
+            writer_ASXDRGBHU = new HBS.Writer();
+            writer_ASXDRGBHU.Write(o.sampleCount); //field primitive
             writer.Write(writer_ASXDRGBHU.stream.ToArray());
             writer_ASXDRGBHU.Close();
         }
@@ -46,6 +64,30 @@ namespace HBS {
                     try {
                         reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
                         o.name = (System.String)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+
+                if (name_ASXDRGBHU == "length") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.length = (System.Single)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+
+                if (name_ASXDRGBHU == "channels") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.channels = (System.Int32)reader_ASXDRGBHU.Read(); //field primitive
+                        reader_ASXDRGBHU.Close();
+                    } catch { }
+                }
+
+                if (name_ASXDRGBHU == "sampleCount") {
+                    try {
+                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);
+                        o.sampleCount = (System.Int32)reader_ASXDRGBHU.Read(); //field primitive
                         reader_ASXDRGBHU.Close();
                     } catch { }
                 }

@@ -143,7 +143,7 @@ MonoBehaviour:
   shiftGearThrottleDelay: 0.08
   gearShift:
     clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: a6b5dd22f847ba743b5b463ddf5471a4, type: 3}
       name: 
     volume: 0.3
     startShift: 0.261
@@ -154,7 +154,7 @@ MonoBehaviour:
   additionalTurboPitch: 0.5
   turboAudio:
     clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: 0ed5612abace41542abc5e4ccde70fd9, type: 3}
       name: 
     volume: 0.396
     startShift: 0.405
@@ -163,7 +163,7 @@ MonoBehaviour:
     endPitch: 1
   turboBlowoffValveAudio:
     clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: b8592289bcea6a74781cb7adb0407c3a, type: 3}
       name: 
     volume: 0.016
     startShift: 0
@@ -180,7 +180,7 @@ MonoBehaviour:
   useExhaustPops: 1
   exhaustPops:
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: 62490acbe71ddd249ae90c81014529a5, type: 3}
       name: 
     volume: 0.35
     startShift: 0
@@ -188,7 +188,7 @@ MonoBehaviour:
     startPitch: 1
     endPitch: 1
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: 5c1741661b4be534aaf2c5fb30e0230c, type: 3}
       name: 
     volume: 0.375
     startShift: 0
@@ -196,7 +196,7 @@ MonoBehaviour:
     startPitch: 1
     endPitch: 1
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: b72aa07bb2ec3714bbab34d09c1e67a7, type: 3}
       name: 
     volume: 0.404
     startShift: 0
@@ -204,7 +204,7 @@ MonoBehaviour:
     startPitch: 1
     endPitch: 1
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: 2241cd3b868f9494c854e2162913411e, type: 3}
       name: 
     volume: 0.413
     startShift: 0
@@ -212,7 +212,7 @@ MonoBehaviour:
     startPitch: 1
     endPitch: 1
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: ffeef2bf681785a49ab214d03ace14e1, type: 3}
       name: 
     volume: 0.426
     startShift: 0
@@ -220,7 +220,7 @@ MonoBehaviour:
     startPitch: 1
     endPitch: 1
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: 35bd6cac760bbe142b4c1ac6dca5be75, type: 3}
       name: 
     volume: 0.417
     startShift: 0
@@ -236,7 +236,7 @@ MonoBehaviour:
     popChanse: 0
   entries:
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: 51e5ded5c6b8ae947a79e28b23781131, type: 3}
       name: 
     volume: 1
     startShift: 0
@@ -244,7 +244,7 @@ MonoBehaviour:
     startPitch: 1
     endPitch: 1.5
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: 8d65ab260acc9544b867720fb8b7fe31, type: 3}
       name: 
     volume: 1
     startShift: 0.024
@@ -252,7 +252,7 @@ MonoBehaviour:
     startPitch: 1
     endPitch: 1.2
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: 74342e33ccc4a63498d37b1dfc438980, type: 3}
       name: 
     volume: 1
     startShift: 0.156
@@ -260,7 +260,7 @@ MonoBehaviour:
     startPitch: 1
     endPitch: 1.2
   - clip:
-      clip: {fileID: 0}
+      clip: {fileID: 8300000, guid: f0a4b87ea1691ec46a1e1b8ce136da88, type: 3}
       name: 
     volume: 1
     startShift: 0.316

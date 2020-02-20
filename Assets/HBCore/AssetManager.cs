@@ -107,6 +107,8 @@ namespace HBWorld {
             //setup mesh extension to async
             HBS.MeshExtension.savePath = c;
             HBS.MeshExtension.async = true;
+            HBS.RevExtension.savePath = c;
+            HBS.RevExtension.async = true;
 
             //unzip to
             HBS.Serializer.UnzipFolderTo(path, c);
@@ -144,6 +146,7 @@ namespace HBWorld {
 
                         yield return Ninja.JumpToUnity;
                         HBS.MeshExtension.savePath = c2;
+                        HBS.RevExtension.savePath = c2;
                         PostProgress(onProgress, 0.02f);
 
                         yield return HBS.Serializer.LoadGameObjectAsync(filePath, 5, (ret) => {
@@ -157,7 +160,7 @@ namespace HBWorld {
 
 
             if (o != null) {
-                instance.curInstantiateGameObjectRoot = o;
+                curInstantiateGameObjectRoot = o;
                 //call the async load method on MeshExtension
                 var cc = 0;
 
@@ -165,7 +168,17 @@ namespace HBWorld {
 
                     yield return instance.StartCoroutineAsync(MeshUtilities.LoadH3dOntoMeshAsync(v.Key, v.Value));
 
-                    PostProgress(onProgress, 0.8f + (cc / (float)HBS.MeshExtension.asyncTodo.Count * 0.15f));
+                    PostProgress(onProgress, 0.8f + (cc / (float)HBS.MeshExtension.asyncTodo.Count * 0.05f));
+                    cc++;
+                }
+
+                foreach (var v in HBS.RevExtension.asyncTodo) {
+
+                    yield return instance.StartCoroutineAsync(RevAudioClipUtilities.LoadHraOntoRevAudioClipAsync(v.Key, v.Value));
+
+                    v.Value.SetReady();
+
+                    PostProgress(onProgress, 0.85f + (cc / (float)HBS.RevExtension.asyncTodo.Count * 0.1f));
                     cc++;
                 }
 
@@ -210,7 +223,7 @@ namespace HBWorld {
                 if (a == null) { a = o.AddComponent<Asset>(); }
                 a.path = path;
 
-                instance.curInstantiateGameObjectRoot = null;
+                curInstantiateGameObjectRoot = null;
 
                 PostProgress(onProgress, 1f);
 
@@ -224,6 +237,8 @@ namespace HBWorld {
 
             HBS.MeshExtension.asyncTodo.Clear();
             HBS.MeshExtension.async = false;
+            HBS.RevExtension.asyncTodo.Clear();
+            HBS.RevExtension.async = false;
 
             //call onReturn
             onReturn(o, "succes");
@@ -251,13 +266,13 @@ namespace HBWorld {
             //setup mesh extension to async
             HBS.MeshExtension.savePath = c;
             HBS.MeshExtension.async = true;
+            HBS.RevExtension.savePath = c;
+            HBS.RevExtension.async = true;
 
             //unzip to
             HBS.Serializer.UnzipFolderTo(path, c);
-
-
+            
             //load gameObject
-            //GameObject o = HBS.Serializer.LoadGameObject(c + "/data.txt");
 
             //check if its a regular hbp 
             var filePath = c + "/data.txt";
@@ -285,6 +300,7 @@ namespace HBWorld {
                     filePath = c2 + "/data.txt";
                     if (File.Exists(filePath)) {
                         HBS.MeshExtension.savePath = c2;
+                        HBS.RevExtension.savePath = c2;
 
                         yield return Ninja.JumpToUnity;
 
@@ -299,10 +315,14 @@ namespace HBWorld {
 
 
             if (o != null) {
-                instance.curInstantiateGameObjectRoot = o;
+                curInstantiateGameObjectRoot = o;
                 //call the async load method on MeshExtension
                 foreach (var v in HBS.MeshExtension.asyncTodo) {
                     yield return instance.StartCoroutineAsync(MeshUtilities.LoadH3dOntoMeshAsync(v.Key, v.Value));
+                }
+                foreach (var v in HBS.RevExtension.asyncTodo) {
+                    yield return instance.StartCoroutineAsync(RevAudioClipUtilities.LoadHraOntoRevAudioClipAsync(v.Key, v.Value));
+                    v.Value.SetReady();
                 }
 
                 yield return Ninja.JumpBack;
@@ -342,8 +362,10 @@ namespace HBWorld {
                 //HBS.MeshExtension.cache.Clear();
                 HBS.MeshExtension.asyncTodo.Clear();
                 HBS.MeshExtension.async = false;
+                HBS.RevExtension.asyncTodo.Clear();
+                HBS.RevExtension.async = false;
 
-                instance.curInstantiateGameObjectRoot = null;
+                curInstantiateGameObjectRoot = null;
 
                 PostProgress(onProgress, 1f);
 
@@ -360,15 +382,17 @@ namespace HBWorld {
             //load extensions 
             HBS.Serializer.LoadExtensions();
 
-            bool preAsync = HBS.MeshExtension.async;
+            
             HBS.MeshExtension.async = false;
+            HBS.RevExtension.async = false;
 
 
             //create cache folder
-            string c = CreateCacheFolder();
+            var c = CreateCacheFolder();
 
             //setup mesh extension
             HBS.MeshExtension.savePath = c;
+            HBS.RevExtension.savePath = c;
 
             //setup terraintile extension
             //HBS.TerrainTileExtension.savePath = c;
@@ -399,6 +423,7 @@ namespace HBWorld {
                     filePath = c2 + "/data.txt";
                     if (File.Exists(filePath)) {
                         HBS.MeshExtension.savePath = c2;
+                        HBS.RevExtension.savePath = c2;
                         o = HBS.Serializer.LoadGameObject(filePath);
                     }
                 }
@@ -409,6 +434,7 @@ namespace HBWorld {
 
             //reset extension
             HBS.MeshExtension.async = false;
+            HBS.RevExtension.async = false;
 
             //assign asset comp if not already
             if (o != null) {
@@ -466,6 +492,8 @@ namespace HBWorld {
             //setup mesh extension
             HBS.MeshExtension.savePath = cache;
             HBS.MeshExtension.async = true;
+            HBS.RevExtension.savePath = cache;
+            HBS.RevExtension.async = true;
 
             //save gameObject
             yield return HBS.Serializer.SaveGameObjectAsync(cache + "/data.txt", obj, 5, (ret) => {
@@ -476,11 +504,11 @@ namespace HBWorld {
 
 
             var cc = 0;
-            foreach (KeyValuePair<string, Mesh> v in HBS.MeshExtension.asyncTodo) {
+            foreach (var v in HBS.MeshExtension.asyncTodo) {
 
                 yield return new WaitForEndOfFrame();
 
-                PostProgress(onProgress, 0.8f + (((float)cc / (float)HBS.MeshExtension.asyncTodo.Count) * 0.2f));
+                PostProgress(onProgress, 0.8f + (((float)cc / (float)HBS.MeshExtension.asyncTodo.Count) * 0.1f));
 
                 var data = new byte[0];
 
@@ -490,6 +518,27 @@ namespace HBWorld {
 
                 yield return Ninja.JumpBack;
 
+                File.WriteAllBytes(v.Key, data);
+
+                yield return Ninja.JumpToUnity;
+
+                cc++;
+            }
+
+            cc = 0;
+            foreach (var v in HBS.RevExtension.asyncTodo) {
+
+                yield return new WaitForEndOfFrame();
+
+                PostProgress(onProgress, 0.9f + (((float)cc / (float)HBS.RevExtension.asyncTodo.Count) * 0.1f));
+
+                var data = new byte[0];
+                yield return instance.StartCoroutineAsync(RevAudioClipUtilities.SaveHraAsync(v.Value, (stream) => {
+                    data = stream.ToArray();
+                }));
+
+                yield return Ninja.JumpBack;
+                
                 File.WriteAllBytes(v.Key, data);
 
                 yield return Ninja.JumpToUnity;
@@ -516,6 +565,8 @@ namespace HBWorld {
             //reset meshextension
             HBS.MeshExtension.asyncTodo.Clear();
             HBS.MeshExtension.async = false;
+            HBS.RevExtension.asyncTodo.Clear();
+            HBS.RevExtension.async = false;
 
             //Destroy clone
             GameObject.DestroyImmediate(obj);
@@ -544,6 +595,9 @@ namespace HBWorld {
 
             //setup mesh extension
             HBS.MeshExtension.savePath = cache;
+            HBS.MeshExtension.async = false;
+            HBS.RevExtension.savePath = cache;
+            HBS.RevExtension.async = false;
 
             //setup terraintile extension
             //HBS.TerrainTileExtension.savePath = cache;

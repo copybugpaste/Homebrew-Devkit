@@ -18,7 +18,7 @@ namespace HBS {
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)] //will serialize this class as part ( only saves properties )
     public class SerializePartVarAttribute : System.Attribute { }
-
+    
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //will serialize component only , this will make serializer put this component back on but does not set any of its values
     public class SerializeComponentOnlyAttribute : System.Attribute { }
 
@@ -36,8 +36,8 @@ namespace HBS {
             specialCaseUnserializers.Clear();
             specialCaseSerializers.Add(typeof(Mesh), new Action<Writer, object>(MeshExtension.SaveMesh));
             specialCaseUnserializers.Add(typeof(Mesh), new Func<Reader, Type, object, object>(MeshExtension.LoadMesh));
-            //specialCaseSerializers.Add(typeof(HBWorld.TerrainTile), new Action<Writer, object>(TerrainTileExtension.SaveTerrainTile));
-            //specialCaseUnserializers.Add(typeof(HBWorld.TerrainTile), new Func<Reader, Type, object, object>(TerrainTileExtension.LoadTerrainTile));
+            specialCaseSerializers.Add(typeof(RevAudioClip), new Action<Writer, object>(RevExtension.SaveRevAudioClip));
+            specialCaseUnserializers.Add(typeof(RevAudioClip), new Func<Reader, Type, object, object>(RevExtension.LoadRevAudioClip));
         }
 
         public static void SaveGameObject(string path, GameObject gameObject) {

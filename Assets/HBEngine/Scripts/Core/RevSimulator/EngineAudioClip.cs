@@ -15,6 +15,9 @@ public class EngineAudioClip : MonoBehaviour {
 
     public static readonly int engineSampleRate = 44100;
 
+    [System.NonSerialized]
+    public bool ready = false;
+
     [Header("Animated Values")]
     [Range(0, 1)]
     public float throttle = 0f;
@@ -80,13 +83,12 @@ public class EngineAudioClip : MonoBehaviour {
     private float shiftGearTime = 0f;
 
     void Start() {
-        audioStartTime = AudioSettings.dspTime + 1.5f;
         
         if ( useInternalExhaustPopSimulation ) {
             exhaustPopSim.onExhaustPop = ExhaustPop;
         }
 
-        BakeAudioClips();
+        //BakeAudioClips();
     }
 
     [ContextMenu("Bake Audio")]
@@ -111,6 +113,54 @@ public class EngineAudioClip : MonoBehaviour {
             turboBlowoffValveAudio.BakeAudioClip();
         }
     }
+
+    void ApplyRevAudioClips() {
+        if (entries != null) {
+            for (var i = 0; i < entries.Length; i++) {
+                entries[i].ApplyRevAudioClip();
+            }
+        }
+
+        if (exhaustPops != null) {
+            for (var i = 0; i < exhaustPops.Length; i++) {
+                exhaustPops[i].ApplyRevAudioClip();
+            }
+        }
+
+        if (useGearShiftSound) {
+            gearShift.ApplyRevAudioClip();
+        }
+        if (useTurboSound) {
+            turboAudio.ApplyRevAudioClip();
+            turboBlowoffValveAudio.ApplyRevAudioClip();
+        }
+    }
+
+    bool CheckReady() {
+        if (entries != null) {
+            for (var i = 0; i < entries.Length; i++) {
+                if (entries[i].clip.isReady == false) { return false; }
+            }
+        }
+
+        if (exhaustPops != null) {
+            for (var i = 0; i < exhaustPops.Length; i++) {
+                if (exhaustPops[i].clip.isReady == false) { return false; }
+            }
+        }
+
+        if (useGearShiftSound) {
+            if (gearShift.clip.isReady == false) { return false; }
+        }
+
+        if (useTurboSound) {
+            if(turboAudio.clip.isReady == false) { return false; }
+            if (turboBlowoffValveAudio.clip.isReady == false) { return false; }
+        }
+
+        return true;
+    }
+
 
     public void ShiftGear() {
         shiftGearTime = Time.time + shiftGearThrottleDelay;
@@ -142,7 +192,16 @@ public class EngineAudioClip : MonoBehaviour {
     }
 
     private void Update() {
-      
+
+        if( !ready ) {
+            ready = CheckReady();
+            if( ready ) {
+                audioStartTime = AudioSettings.dspTime + 1.5f;
+                ApplyRevAudioClips();
+            }
+            return;
+        }
+        
         var _accel = Mathf.Clamp01(accel);
         var _throttle = Mathf.Clamp01(throttle);
         var _shift = Mathf.Clamp01(shift);
@@ -168,6 +227,8 @@ public class EngineAudioClip : MonoBehaviour {
     }
 
     void OnAudioFilterRead(float[] s_d, int channels) {
+
+        if (!ready) { return; }
 
         var _shift = Mathf.Clamp01(shift);
         var _turbo = Mathf.Clamp01(turbo);
@@ -547,24 +608,24 @@ public class EngineAudioClip : MonoBehaviour {
         public bool playingOneShot = false;
 
         public void BakeAudioClip() {
-            samples = new float[0];
-            if(clip == null || clip.clip == null ) {
-                Debug.LogError("EngineAudioClip: audio clip is null, can't bake it");
-                return;
-            }
-            if(clip.clip.length * 0.5f > 15f ) {
-                Debug.LogError("EngineAudioClip: audio clip: " + clip.clip.name + " is longer then 15 secs, can't bake it");
-                return;
-            }
-            samples = new float[clip.clip.samples*clip.clip.channels];
-            clip.clip.GetData(samples, 0);
-            sampleCount = samples.Length;
-            channels = clip.clip.channels;
-            length = clip.clip.length;
-            
+
+            clip.BakeAudioClip();
+
         }
+
+        public void ApplyRevAudioClip() {
+            
+            samples = clip.samples;
+            sampleCount = clip.sampleCount;
+            channels = clip.channels;
+            length = clip.length;
+        }
+
         public float GetSample( int channel ) {
             if( channel > channels-1 ) { channel = channels-1; }
+            if( samples == null  ) {
+                return 0f;
+            }
             return samples[(int)(System.Math.Floor(position * channels)+channel)%(int)sampleCount] * weight * Mathf.Sqrt(Mathf.Clamp01(volume));
         }
         

@@ -6,7 +6,7 @@ using System.IO;
 using CielaSpike;
 
 namespace HBS {
-    public static class RevAudioClipExtension {
+    public static class RevExtension {
         public static Dictionary<string, RevAudioClip> cacheNoClear = new Dictionary<string, RevAudioClip>();
         public static string savePath;
         public static bool async = false;
@@ -15,11 +15,23 @@ namespace HBS {
         public static void SaveRevAudioClip(HBS.Writer writer , object oo) {
             if( writer.WriteNull(oo)) { return; }
             RevAudioClip o = (RevAudioClip)oo;
-            string hash = RevAudioClipUtilities.CalcHash(o);
+            var path = "";
+
+            if (async) {
+                path = savePath + "/" + o.name + ".h3d";
+
+                writer.Write(o.name);
+                if (asyncTodo.ContainsKey(path) == false) {
+                    asyncTodo.Add(path, (RevAudioClip)o);
+                }
+                return;
+            }
+
+            var hash = RevAudioClipUtilities.CalcHash(o);
             writer.Write(hash);
-          
-            string path = savePath + "/" + hash + ".hra";
-            if (File.Exists(path) == false) { //dont resave thesame RevAudioClip
+            path = savePath + "/" + hash + ".h3d";
+            
+            if (File.Exists(path) == false) { //dont resave thesame mesh
                 RevAudioClipUtilities.SaveHra(o, path);
             }
             
@@ -34,7 +46,7 @@ namespace HBS {
                 return cacheNoClear[hash];
             }
             //load ur custum mesh file
-            string path = savePath + "/" + hash + ".hra";
+            string path = savePath + "/" + hash + ".h3d";
             //byte[] data = File.ReadAllBytes(path);
             RevAudioClip o = null;
             if (async) {
@@ -62,20 +74,5 @@ namespace HBS {
             
         }
 
-        public static IEnumerator RunAsync() {
-            
-            yield return Ninja.JumpBack;
-
-            foreach (var v in asyncTodo) {
-                RevAudioClipUtilities.LoadHraOntoRevAudioClip(v.Key, v.Value);
-            }
-
-            asyncTodo.Clear();
-
-            yield return Ninja.JumpToUnity;
-
-            async = false;
-
-        }
     }
 }

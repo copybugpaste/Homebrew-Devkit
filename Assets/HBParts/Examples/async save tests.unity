@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
@@ -243,12 +243,12 @@ Camera:
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_RenderingPath: -1
+  m_RenderingPath: 3
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
-  m_AllowMSAA: 1
+  m_AllowMSAA: 0
   m_ForceIntoRT: 0
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
@@ -570,7 +570,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47c743612825cab44a3e6bf05a423baa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  p: 
+  p: C:/Users/Nivada/AppData/LocalLow/CopyBugPaste/Homebrew14/test/untitled2.hbp
   image: {fileID: 198143805}
   asset: {fileID: 0}
 --- !u!1 &1728475439
@@ -694,8 +694,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eeb582b413a794c47971af2d94d59954, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  curInstantiateGameObjectRoot: {fileID: 0}
-  curQueID: 
 --- !u!4 &1903021334
 Transform:
   m_ObjectHideFlags: 0
