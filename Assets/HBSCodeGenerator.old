@@ -1,0 +1,1089 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using UnityEngine;
+
+namespace HBS {
+
+    public static class CodeGenerator {
+
+        private static bool BlackList(Type f, out string contains) {
+            contains = "";
+            if (f.FullName.Contains("HoloLens")) { contains = "HoloLens"; return true; }
+            if (f.FullName.Contains("iOS")) { contains = "iOS"; return true; }
+            if (f.FullName.ToLower().Contains("iphone")) { contains = "iphone"; return true; }
+            if (f.FullName.Contains("ColorTween")) { contains = "ColorTween"; return true; }
+            if (f.FullName.Contains("MeshSubsetCombineUtility")) { contains = "MeshSubsetCombineUtility"; return true; }
+            if (f.FullName.Contains("`1")) { contains = "`1"; return true; }
+            if (f.FullName.Contains("`2")) { contains = "`2"; return true; }
+            if (f.FullName.Contains("`3")) { contains = "`3"; return true; }
+            if (f.FullName.Contains("`4")) { contains = "`4"; return true; }
+            if (f.FullName.Contains("`5")) { contains = "`5"; return true; }
+            if (f.FullName.Contains("`6")) { contains = "`6"; return true; }
+            if (f.FullName.ToLower().Contains("sphericalharmonicsl2")) { contains = "sphericalharmonicsl2"; return true; }
+            if (f.FullName.ToLower().Contains("exposedreference")) { contains = "exposedreference"; return true; }
+            if (f.FullName.ToLower().Contains("unityengine.networking")) { contains = "unityengine.networking"; return true; }
+            if (f.FullName.ToLower().Contains("rendertargetsetup")) { contains = "rendertargetsetup"; return true; }
+            //HBSPECIFIC
+            if (f.FullName.ToLower().Contains("bulletmeshscript")) { contains = "bulletmeshscript"; return true; }
+            if (f.FullName.ToLower().Contains("csharpsynth")) { contains = "csharpsynth"; return true; }
+            if (f.FullName.ToLower().Contains("unitystandardassets")) { contains = "unitystandardassets"; return true; }
+            if (f.FullName.ToLower().Contains("akenvironmentportal")) { contains = "akenvironmentportal"; return true; }
+            if (f.FullName.ToLower().Contains("hbuildablepart")) { contains = "hbuildablepart"; return true; }
+            if (f.FullName.ToLower().Contains("planetresources")) { contains = "planetresources"; return true; }
+            if (f.FullName.ToLower().Contains("rootmotion")) { contains = "rootmotion"; return true; }
+            if (f.FullName.ToLower().Contains("threezone")) { contains = "threezone"; return true; }
+            if (f.FullName.ToLower().Contains("slua")) { contains = "slua"; return true; }
+            if (f.FullName.Contains("Lua_")) { contains = "Lua_"; return true; }
+            if (f.FullName.ToLower().Contains("threezone")) { contains = "threezone"; return true; }
+            if (f.FullName.ToLower().Contains("threezone")) { contains = "threezone"; return true; }
+
+            if (f.FullName.ToLower().Contains("samsung")) { contains = "samsung"; return true; }
+            if (f.FullName.ToLower().Contains("wsa")) { contains = "wsa"; return true; }
+            if (f.FullName.ToLower().Contains("webcam")) { contains = "webcam"; return true; }
+            if (f.FullName.ToLower().Contains("tizenactivityindicatorstyle")) { contains = "tizenactivityindicatorstyle"; return true; }
+            if (f.FullName.Contains("TextureCompressionQuality")) { contains = "TextureCompressionQuality"; return true; }
+            if (f.FullName.Contains("FullScreenMovieControlMode")) { contains = "FullScreenMovieControlMode"; return true; }
+            if (f.FullName.Contains("AndroidActivityIndicatorStyle")) { contains = "AndroidActivityIndicatorStyle"; return true; }
+            if (f.FullName.Contains("NativeLeakDetectionMode")) { contains = "NativeLeakDetectionMode"; return true; }
+            if (f.FullName.ToLower().Contains("adbannerview")) { contains = "adbannerview"; return true; }
+            if (f.FullName.ToLower().Contains("testtools")) { contains = "testtools"; return true; }
+            if (f.FullName.ToLower().Contains("hololens")) { contains = "hololens"; return true; }
+            if (f.FullName.ToLower().Contains("analyticstracker")) { contains = "analyticstracker"; return true; }
+            if (f.FullName.ToLower().Contains("fullscreenmoviescalingmode")) { contains = "fullscreenmoviescalingmode"; return true; }
+            if (f.FullName.Contains("TouchScreenKeyboard")) { contains = "TouchScreenKeyboard"; return true; }
+
+            //Stuff we dont need
+            if (f.FullName.ToLower().Contains("androidjavaexception")) { contains = "androidjavaexception"; return true; }
+            if (f.FullName.ToLower().Contains("assertionexception")) { contains = "assertionexception"; return true; }
+            if (f.FullName.ToLower().Contains("audiomixer")) { contains = "audiomixer"; return true; }
+            if (f.FullName.ToLower().Contains("audiomixergroup")) { contains = "audiomixergroup"; return true; }
+            if (f.FullName.ToLower().Contains("audiomixersnapshot")) { contains = "audiomixersnapshot"; return true; }
+            if (f.FullName.ToLower().Contains("avatar")) { contains = "avatar"; return true; }
+            if (f.FullName.ToLower().Contains("cubemaparray")) { contains = "cubemaparray"; return true; }
+            if (f.FullName.ToLower().Contains("scriptplayable")) { contains = "scriptplayable"; return true; }
+            if (f.FullName.ToLower().Contains("gyroscope")) { contains = "gyroscope"; return true; }
+            if (f.FullName.ToLower().Contains("ilogger")) { contains = "ilogger"; return true; }
+            if (f.FullName.ToLower().Contains("logger")) { contains = "logger"; return true; }
+            if (f.FullName.ToLower().Contains("playerprefsexception")) { contains = "playerprefsexception"; return true; }
+            if (f.FullName.ToLower().Contains("proceduralmaterial")) { contains = "proceduralmaterial"; return true; }
+            if (f.FullName.ToLower().Contains("socialplatforms")) { contains = "socialplatforms"; return true; }
+            if (f.FullName.ToLower().Contains("statemachinebehaviour")) { contains = "statemachinebehaviour"; return true; }
+            if (f.FullName.ToLower().Contains("texture2darray")) { contains = "texture2darray"; return true; }
+            if (f.FullName.ToLower().Contains("eventsystems")) { contains = "eventsystems"; return true; }
+            if (f.FullName.ToLower().Contains("renderpipelineasset")) { contains = "renderpipelineasset"; return true; }
+
+            if (f.FullName.Contains("GUI")) { contains = "GUI"; return true; }
+            if (f.FullName.Contains("GUILayout")) { contains = "GUILayout"; return true; }
+            if (f.FullName.Contains("Profiling.Recorder")) { contains = "Profiling.Recorder"; return true; }
+            if (f.FullName.Contains("WWW")) { contains = "WWW"; return true; }
+
+            if (f.FullName.Contains("AudioSpatializerMicrosoft")) { contains = "AudioSpatializerMicrosoft"; return true; }
+            if (f.FullName.Contains("AnimatorControllerParameter")) { contains = "AnimatorControllerParameter"; return true; }
+
+
+            return false;
+        }
+
+        private static bool IsForResources(Type f, out string pathOffset) {
+            pathOffset = "";
+            if (f == typeof(Cubemap)) { return true; }
+            if (f == typeof(Texture)) { return true; }
+            if (f == typeof(Texture2D)) { return true; }
+            if (f == typeof(Texture3D)) { return true; }
+            if (f == typeof(RenderTexture)) { return true; }
+            if (f == typeof(Material)) { return true; }
+            if (f == typeof(SparseTexture)) { return true; }
+            if (f == typeof(Font)) { return true; }
+            if (f == typeof(AudioClip)) { pathOffset = "Audio"; return true; }
+            if (f == typeof(Sprite)) { return true; }
+            if (f == typeof(PhysicMaterial)) { return true; }
+            if (f == typeof(Shader)) { return true; }
+            if (f == typeof(AnimationClip)) { return true; }
+            return false;
+        }
+
+        private static bool InvalidType(Type f) {
+            if (f.IsDefined(typeof(ObsoleteAttribute), true)) { return true; }
+            if (f.BaseType != null && f.BaseType.Name.Contains("Attribute")) { return true; }//no attributes
+            string contains = "";
+            if (BlackList(f, out contains)) {
+                Debug.Log("blacklisted: " + f.ToString() + " contains: " + contains);
+                return true;
+            }
+            return false;
+        }
+
+        private static bool InvalidVarName(string nam) {
+            if (nam == "Item") { return true; }
+            if (nam == "mesh") { return true; }
+            if (nam == "material") { return true; }
+            if (nam == "materials") { return true; }
+            if (nam == "parent") { return true; }
+            if (nam == "runInEditMode") { return true; }
+            if (nam == "areaSize") { return true; }
+            if (nam == "bakeLightProbesForTrees") { return true; }
+            if (nam == "lightmapBakeType") { return true; }
+            if (nam == "scaledBackgrounds") { return true; }
+            if (nam == "areaSize") { return true; }
+            if (nam == "targetDisplay") { return true; }
+            return false;
+        }
+
+        private static bool IsComponentOrGameObject(Type f) {
+            if (f == typeof(GameObject)) { return true; }
+            Type b = f.BaseType;
+            while (b != null) {
+                if (b == typeof(Component)) { return true; }
+                b = b.BaseType;
+            }
+
+            return false;
+        }
+
+        private static bool IsEnumerableType(Type type) {
+            return (type.GetInterface("IEnumerable") != null);
+        }
+
+        private static bool IsSpecialCase(Type f) {
+            return (HBS.Serializer.specialCaseSerializers.ContainsKey(f) && HBS.Serializer.specialCaseUnserializers.ContainsKey(f));
+        }
+
+        private static bool IsPrimitive(Type f) {
+            if (f == typeof(IntPtr) || f == typeof(UIntPtr)) { return false; }
+            return (f.IsPrimitive || f.Assembly.GetName().FullName.Contains("mscorlib"));
+        }
+
+        private static string[] GetEnums(Type t) {
+            return System.Enum.GetNames(t);
+        }
+
+        private static Assembly[] GetAssemblies() {
+            Assembly[] assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+            List<Assembly> ret = new List<Assembly>();
+            foreach (Assembly a in assemblies) {
+                if (a.GetName().FullName.Contains("VR")) { continue; }
+                if (a.GetName().FullName.Contains("Editor")) { continue; }
+                if (a.GetName().FullName.Contains(".Networking")) { continue; }
+                if (a.GetName().FullName.StartsWith("UnityEngine") == false && a.GetName().FullName.Contains("Assembly-CSharp") == false) { continue; }
+                ret.Add(a);
+            }
+            return ret.ToArray();
+        }
+
+        private static Type[] GetClasses(Assembly a) {
+            Type[] types = a.GetExportedTypes();
+            List<Type> ret = new List<Type>();
+            foreach (Type f in types) {
+                if (InvalidType(f)) { continue; }
+                if (GetFields(f, false).Length == 0 && GetProperties(f, false).Length == 0) { continue; }
+                ret.Add(f);
+            }
+            return ret.ToArray();
+        }
+
+        private static FieldInfo[] GetFields(Type t, bool further = true) {
+            FieldInfo[] fields = t.GetFields();
+            List<FieldInfo> ret = new List<FieldInfo>();
+            foreach (FieldInfo f in fields) {
+                if (f.IsPrivate) { continue; }
+                if (f.IsInitOnly) { continue; }
+                if (f.IsLiteral) { continue; }
+                if (f.IsStatic) { continue; }               
+                if (f.IsNotSerialized ) { continue; }
+                if (f.IsDefined(typeof(ObsoleteAttribute), true)) { continue; }
+                if (InvalidVarName(f.Name)) { continue; }
+                if (InvalidType(f.FieldType)) { continue; }
+                if (further && IsPrimitive(f.FieldType) == false && f.FieldType.IsArray == false) {
+                    if (GetFields(f.FieldType, false).Length == 0 && GetProperties(f.FieldType, false).Length == 0) { continue; }
+                }
+                ret.Add(f);
+            }
+            return ret.ToArray();
+        }
+
+        private static PropertyInfo[] GetProperties(Type t, bool further = true) {
+            PropertyInfo[] properties = t.GetProperties();
+            List<PropertyInfo> ret = new List<PropertyInfo>();
+            foreach (PropertyInfo f in properties) {
+                if (f.GetGetMethod() == null || f.GetSetMethod() == null) { continue; }
+                if (f.GetGetMethod().IsStatic || f.GetSetMethod().IsStatic) { continue; }
+                if (f.IsDefined(typeof(ObsoleteAttribute), true)) { continue; }
+                if (InvalidVarName(f.Name)) { continue; }
+                if (InvalidType(f.PropertyType)) { continue; }
+                if (further && IsPrimitive(f.PropertyType) == false && f.PropertyType.IsArray == false) {
+                    if (GetFields(f.PropertyType, false).Length == 0 && GetProperties(f.PropertyType, false).Length == 0) { continue; }
+                }
+                ret.Add(f);
+            }
+            return ret.ToArray();
+        }
+
+        private static string FixName(string n) {
+            string ret = n.Trim(Path.GetInvalidFileNameChars()).Replace("+", "_").Replace("]", "").Replace("[", "").Replace("$", "").Replace(".", "_");
+            if (ret.Contains("`")) { ret = ret.Substring(0, ret.Length - 2); }
+            return ret;
+        }
+
+        private static string FixFullName(string n) {
+            string ret = n.Replace("+", ".");
+            if (ret.Contains("`")) { ret = ret.Substring(0, ret.Length - 2); }
+            return ret;
+        }
+
+        public static void ClearCode() {
+            try {
+                string path = new DirectoryInfo(Application.streamingAssetsPath).Parent.FullName + "/HBWorld/HBS/GeneratedCode";
+                //Directory.Delete(path,true);
+
+                Directory.CreateDirectory(path);
+
+                DirectoryInfo dir = new DirectoryInfo(path);
+                foreach (DirectoryInfo d in dir.GetDirectories()) {
+                    Directory.Delete(d.FullName, true);
+                }
+
+                StreamWriter bindscript = File.CreateText(path + "/SerializerBinder.cs");
+                bindscript.WriteLine("using UnityEngine;");
+                bindscript.WriteLine("using System;");
+                bindscript.WriteLine("using System.Collections;");
+                bindscript.WriteLine("using System.Collections.Generic;");
+                bindscript.WriteLine("namespace HBS {");
+                bindscript.WriteLine("    public static partial class SerializerBinder {");
+                bindscript.WriteLine("    }");
+                bindscript.WriteLine("}");
+                bindscript.Close();
+            } catch (System.Exception e) {
+                Debug.Log(e.ToString());
+            }
+        }
+
+        public static void GenerateCode() {
+            //enable extensions
+            Serializer.InitHooks();
+
+            string path = new DirectoryInfo(Application.dataPath).FullName + "/HBCore/HBS/GeneratedCode";
+            Directory.CreateDirectory(path);
+
+            StreamWriter bindscript = File.CreateText(path + "/SerializerBinder.cs");
+            bindscript.WriteLine("using UnityEngine;");
+            bindscript.WriteLine("using System;");
+            bindscript.WriteLine("using System.Collections;");
+            bindscript.WriteLine("using System.Collections.Generic;");
+            bindscript.WriteLine("namespace HBS {");
+            bindscript.WriteLine("    public static partial class SerializerBinder {");
+            bindscript.WriteLine("        static SerializerBinder() {");
+
+            Assembly[] assemblies = GetAssemblies();
+            foreach (Assembly a in assemblies) {
+                string aName = FixName(a.GetName().Name);
+                Directory.CreateDirectory(path + "/" + aName);
+
+                Type[] classes = GetClasses(a);
+                foreach (Type t in classes) {
+                    bool isForPart = false; //do we wana serialize a HB part?
+                    bool isOnlyComponent = false; //do we jsut wana serialize the component without any values .. this to make the serialize put the component on it but then leave it alone...
+
+                    //if Assembly-CSharp then check for attribute
+                    if (a.FullName.Contains("Assembly-CSharp") || a.FullName.Contains("Assembly-CSharp-firstpass")) {
+                        object[] attributes = t.GetCustomAttributes(typeof(HBS.SerializeAttribute), false);
+                        object[] partAttributes = t.GetCustomAttributes(typeof(HBS.SerializePartAttribute), false);
+                        object[] compOnlyAttributes = t.GetCustomAttributes(typeof(HBS.SerializeComponentOnlyAttribute), false);
+                        if (attributes.Length == 0 && partAttributes.Length == 0 && compOnlyAttributes.Length == 0) {
+                            continue;
+                        }
+                        if (partAttributes.Length > 0) {
+                            isForPart = true;
+                        }
+                        if (compOnlyAttributes.Length > 0) {
+                            isOnlyComponent = true;
+                        }
+                    }
+
+                    PropertyInfo[] properties = GetProperties(t);
+                    FieldInfo[] fields = GetFields(t);
+
+                    string tFullName = FixFullName(t.FullName);
+                    string sName = FixName(t.FullName).ToLower();
+                    string resourcesOffsetPath = "";
+
+                    StreamWriter script = null;
+
+                    try {
+                        script = File.CreateText(path + "/" + aName + "/Ser_" + sName + ".cs");
+                    } catch {
+                        continue;
+                    }
+
+                    script.WriteLine("using UnityEngine;");
+                    script.WriteLine("using UnityEngine.UI;");
+                    script.WriteLine("using System;");
+
+                    script.WriteLine("namespace HBS {");
+
+                    script.WriteLine("    public static class Ser_" + sName + " {");
+
+                    if (isOnlyComponent) {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer, object oo ) {}");
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object oo = null ) { return oo; }");
+                    } else if (t.IsEnum) {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer, object oo ) {");
+                        script.WriteLine("            if( writer.WriteNull(oo) ) { return; }");
+                        script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+                        script.WriteLine("            writer.Write(o.ToString());");
+                        script.WriteLine("        }");
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object o = null ) {");
+                        script.WriteLine("            if(reader.ReadNull()){ return null; }");
+                        script.WriteLine("            return (object)(" + tFullName + ")System.Enum.Parse(typeof(" + tFullName + "),(string)reader.Read());");
+                        script.WriteLine("        }");
+                    } else if (IsForResources(t, out resourcesOffsetPath)) {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer, object oo ) {");
+                        script.WriteLine("            if( writer.WriteNull(oo)) { return; }");
+                        script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+                        script.WriteLine("            writer.Write(o.name);");
+                        script.WriteLine("        }");
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object o = null) {");
+                        script.WriteLine("            if(reader.ReadNull()){ return null; }");
+                        if (resourcesOffsetPath == "") {
+                            script.WriteLine("            return (object)Resources.Load<" + tFullName + ">((string)reader.Read());");
+                        } else {
+                            script.WriteLine("            return (object)Resources.Load<" + tFullName + ">(\"" + resourcesOffsetPath + "/\"+(string)reader.Read());");
+                        }
+                        script.WriteLine("        }");
+                    } else {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer , object oo ) {");
+                        script.WriteLine("            if( writer.WriteNull(oo)) { return; }");
+                        script.WriteLine("            HBS.Writer writer_ASXDRGBHU;");
+                        script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+
+                        //write count ( calc difrent for part )
+                        if (isForPart) {
+                            int totalCount = 1;
+                            foreach (FieldInfo f in fields) {
+                                if (f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute if its for parts
+                                totalCount++;
+                            }
+                            foreach (PropertyInfo f in properties) {
+                                if (f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute if its for parts
+                                totalCount++;
+                            }
+                            script.WriteLine("            writer.Write(" + totalCount.ToString() + ");");
+                        } else {
+                            script.WriteLine("            writer.Write(" + (fields.Length + properties.Length).ToString() + ");");
+                        }
+
+                        if (isForPart && t.BaseType == typeof(Part)) {
+                            script.WriteLine("");
+                            script.WriteLine("            writer.Write(\"PartPropertiesBytes\");");
+                            //script.WriteLine("            writer.Write(\"PartProperties\");");
+                            script.WriteLine("            writer_ASXDRGBHU = new HBS.Writer();");
+                            script.WriteLine("            o.PropertiesToBytes(writer_ASXDRGBHU); //writer_ASXDRGBHU.Write(o.PropertiesToString());");
+                            //script.WriteLine("            writer_ASXDRGBHU.Write(o.PropertiesToString());");
+                            script.WriteLine("            writer.Write(writer_ASXDRGBHU.stream.ToArray());");
+                            script.WriteLine("            writer_ASXDRGBHU.Close();");
+                        }
+
+                        #region save fields/properties
+
+                        foreach (FieldInfo f in fields) {
+                            if (isForPart && f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute if its for parts
+                            script.WriteLine("");
+                            script.WriteLine("            writer.Write(\"" + f.Name + "\");");
+                            script.WriteLine("            writer_ASXDRGBHU = new HBS.Writer();");
+                            if (f.FieldType.IsArray) {
+                                script.WriteLine("            if( writer_ASXDRGBHU.WriteNull(o." + f.Name + ") == false ) {");
+                                script.WriteLine("                writer_ASXDRGBHU.Write(o." + f.Name + ".Length);");
+                                script.WriteLine("                for( int i = 0; i < o." + f.Name + ".Length; i++ ) {");
+                                Type et = f.FieldType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                    HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(writer_ASXDRGBHU,o." + f.Name + "[i]); //field special case");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                    writer_ASXDRGBHU.Write(o." + f.Name + "[i]); //field primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                    HBS.Serializer.SerializePath(writer_ASXDRGBHU,o." + f.Name + "[i]); //field component or gameObject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                    HBS.Ser_" + fsname + ".Ser( writer_ASXDRGBHU , o." + f.Name + "[i]); //field");
+                                }
+                                script.WriteLine("                }");
+                                script.WriteLine("            }");
+                            } else {
+                                if (IsSpecialCase(f.FieldType)) {
+                                    script.WriteLine("            HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(f.FieldType.FullName) + ")].Invoke(writer_ASXDRGBHU,o." + f.Name + "); //field special case");
+                                } else if (IsPrimitive(f.FieldType)) {
+                                    script.WriteLine("            writer_ASXDRGBHU.Write(o." + f.Name + "); //field primitive");
+                                } else if (IsComponentOrGameObject(f.FieldType)) {
+                                    script.WriteLine("            HBS.Serializer.SerializePath(writer_ASXDRGBHU,o." + f.Name + "); //field component or gameObject");
+                                } else {
+                                    string fsname = FixName(f.FieldType.FullName).ToLower();
+                                    script.WriteLine("            HBS.Ser_" + fsname + ".Ser( writer_ASXDRGBHU , o." + f.Name + "); //field");
+                                }
+                            }
+                            script.WriteLine("            writer.Write(writer_ASXDRGBHU.stream.ToArray());");
+                            script.WriteLine("            writer_ASXDRGBHU.Close();");
+                        }
+
+                        foreach (PropertyInfo f in properties) {
+                            if (isForPart && f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute if its for parts
+                            script.WriteLine("");
+                            script.WriteLine("            writer.Write(\"" + f.Name + "\");");
+                            script.WriteLine("            writer_ASXDRGBHU = new HBS.Writer();");
+                            if (f.PropertyType.IsArray) {
+                                script.WriteLine("            if( writer_ASXDRGBHU.WriteNull(o." + f.Name + ") == false ) {");
+                                script.WriteLine("                writer_ASXDRGBHU.Write(o." + f.Name + ".Length);");
+                                script.WriteLine("                for( int i = 0; i < o." + f.Name + ".Length; i++ ) {");
+                                Type et = f.PropertyType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                    HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(writer_ASXDRGBHU,o." + f.Name + "[i]); //property special case");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                    writer_ASXDRGBHU.Write(o." + f.Name + "[i]); //property primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                    HBS.Serializer.SerializePath(writer_ASXDRGBHU,o." + f.Name + "[i]); //property component or gameObject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                    HBS.Ser_" + fsname + ".Ser( writer_ASXDRGBHU , o." + f.Name + "[i]); //property");
+                                }
+                                script.WriteLine("                }");
+                                script.WriteLine("            }");
+                            } else {
+                                if (IsSpecialCase(f.PropertyType)) {
+                                    script.WriteLine("            HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(f.PropertyType.FullName) + ")].Invoke(writer_ASXDRGBHU,o." + f.Name + "); //property special case");
+                                } else if (IsPrimitive(f.PropertyType)) {
+                                    script.WriteLine("            writer_ASXDRGBHU.Write(o." + f.Name + "); //property primitive");
+                                } else if (IsComponentOrGameObject(f.PropertyType)) {
+                                    script.WriteLine("            HBS.Serializer.SerializePath(writer_ASXDRGBHU,o." + f.Name + "); //property component or gameObject");
+                                } else {
+                                    string fsname = FixName(f.PropertyType.FullName).ToLower();
+                                    script.WriteLine("            HBS.Ser_" + fsname + ".Ser( writer_ASXDRGBHU , o." + f.Name + "); //property");
+                                }
+                            }
+                            script.WriteLine("            writer.Write(writer_ASXDRGBHU.stream.ToArray());");
+                            script.WriteLine("            writer_ASXDRGBHU.Close();");
+                        }
+
+                        #endregion save fields/properties
+
+                        script.WriteLine("        }");
+
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object oo = null) {");
+                        script.WriteLine("            if(reader.ReadNull()){ return null; }");
+
+                        script.WriteLine("            HBS.Reader reader_ASXDRGBHU;");
+
+                        if (IsComponentOrGameObject(t)) {
+                            script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+                        } else {
+                            script.WriteLine("            " + tFullName + " o = new " + tFullName + "();");
+                        }
+
+                        script.WriteLine("            int count_ASXDRGBHU = (int)reader.Read();");
+                        script.WriteLine("            for (int i_ASXDRGBHU = 0; i_ASXDRGBHU < count_ASXDRGBHU; i_ASXDRGBHU++) {");
+                        script.WriteLine("                string name_ASXDRGBHU = \"\";");
+                        script.WriteLine("                byte[] data_ASXDRGBHU = null;");
+                        script.WriteLine("                try {");
+                        script.WriteLine("                    name_ASXDRGBHU = (string)reader.Read();");
+                        script.WriteLine("                    data_ASXDRGBHU = (byte[])reader.Read();");
+                        script.WriteLine("                } catch { continue; }");
+
+                        if (isForPart && t.BaseType == typeof(Part)) {
+                            script.WriteLine("");
+                            script.WriteLine("                if (name_ASXDRGBHU == \"PartProperties\") {");
+                            script.WriteLine("                    try {");
+                            script.WriteLine("                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);");
+                            script.WriteLine("                        o.PropertiesFromString((string)reader_ASXDRGBHU.Read());");
+                            script.WriteLine("                        reader_ASXDRGBHU.Close();");
+                            script.WriteLine("                    } catch { }");
+                            script.WriteLine("                }");
+
+                            //faster way to ser properties 19/02/20
+
+                            script.WriteLine("                if (name_ASXDRGBHU == \"PartPropertiesBytes\") {");
+                            script.WriteLine("                    try {");
+                            script.WriteLine("                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);");
+                            script.WriteLine("                        o.BytesToProperties(reader_ASXDRGBHU);");
+                            script.WriteLine("                        reader_ASXDRGBHU.Close();");
+                            script.WriteLine("                    } catch { }");
+                            script.WriteLine("                }");
+                        }
+
+                        #region load fields and properties
+
+                        foreach (FieldInfo f in fields) {
+                            if (isForPart && f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute if its for parts
+
+                            script.WriteLine("");
+                            script.WriteLine("                if (name_ASXDRGBHU == \"" + f.Name + "\") {");
+                            script.WriteLine("                    try {");
+                            script.WriteLine("                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);");
+
+                            if (f.FieldType.IsArray) {
+                                script.WriteLine("                    if( reader_ASXDRGBHU.ReadNull() == false ) {");
+                                script.WriteLine("                        " + FixFullName(f.FieldType.FullName) + " " + f.Name + "_arr = new " + FixFullName(f.FieldType.GetElementType().FullName) + "[(int)reader_ASXDRGBHU.Read()];");
+                                script.WriteLine("                        for( int i = 0; i < " + f.Name + "_arr.Length; i++ ) {");
+
+                                Type et = f.FieldType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                                " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(reader_ASXDRGBHU,typeof(" + FixFullName(et.FullName) + "),o." + f.Name + "); //field special case ");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                                " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")reader_ASXDRGBHU.Read(); //field primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                                " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.UnserializePath(reader_ASXDRGBHU); //field component or gameobject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                                " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Ser_" + fsname + ".Res( reader_ASXDRGBHU ); //field");
+                                }
+                                script.WriteLine("                            }");
+                                script.WriteLine("                            o." + f.Name + " = " + f.Name + "_arr;");
+                                script.WriteLine("                         }");
+                            } else {
+                                if (IsSpecialCase(f.FieldType)) {
+                                    script.WriteLine("                        o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(f.FieldType.FullName) + ")].Invoke(reader_ASXDRGBHU,typeof(" + FixFullName(f.FieldType.FullName) + "),o." + f.Name + "); //field special case ");
+                                } else if (IsPrimitive(f.FieldType)) {
+                                    script.WriteLine("                        o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")reader_ASXDRGBHU.Read(); //field primitive");
+                                } else if (IsComponentOrGameObject(f.FieldType)) {
+                                    script.WriteLine("                        o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Serializer.UnserializePath(reader_ASXDRGBHU); //field component or gameobject");
+                                } else {
+                                    string fsname = FixName(f.FieldType.FullName).ToLower();
+                                    script.WriteLine("                        o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Ser_" + fsname + ".Res( reader_ASXDRGBHU ); //field");
+                                }
+                            }
+
+                            script.WriteLine("                        reader_ASXDRGBHU.Close();");
+                            script.WriteLine("                    } catch { }");
+                            script.WriteLine("                }");
+                        }
+
+                        foreach (PropertyInfo f in properties) {
+                            if (isForPart && f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute if its for parts
+
+                            script.WriteLine("");
+                            script.WriteLine("                if (name_ASXDRGBHU == \"" + f.Name + "\") {");
+                            script.WriteLine("                    try {");
+                            script.WriteLine("                        reader_ASXDRGBHU = new HBS.Reader(data_ASXDRGBHU);");
+
+                            if (f.PropertyType.IsArray) {
+                                script.WriteLine("                        if( reader_ASXDRGBHU.ReadNull() == false ) {");
+                                script.WriteLine("                            " + FixFullName(f.PropertyType.FullName) + " " + f.Name + "_arr = new " + FixFullName(f.PropertyType.GetElementType().FullName) + "[(int)reader_ASXDRGBHU.Read()];");
+                                script.WriteLine("                            for( int i = 0; i < " + f.Name + "_arr.Length; i++ ) {");
+                                Type et = f.PropertyType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                                " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(reader_ASXDRGBHU,typeof(" + FixFullName(et.FullName) + "),o." + f.Name + "); //property special case ");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                                " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")reader_ASXDRGBHU.Read(); //property primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                                " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.UnserializePath(reader_ASXDRGBHU); //property component or gameobject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                                " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Ser_" + fsname + ".Res( reader_ASXDRGBHU ); //property");
+                                }
+                                script.WriteLine("                            }");
+                                script.WriteLine("                            o." + f.Name + " = " + f.Name + "_arr;");
+                                script.WriteLine("                        }");
+                            } else {
+                                if (IsSpecialCase(f.PropertyType)) {
+                                    script.WriteLine("                        o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(f.PropertyType.FullName) + ")].Invoke(reader_ASXDRGBHU,typeof(" + FixFullName(f.PropertyType.FullName) + "),o." + f.Name + "); //property special case");
+                                } else if (IsPrimitive(f.PropertyType)) {
+                                    script.WriteLine("                        o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")reader_ASXDRGBHU.Read(); //property primitive");
+                                } else if (IsComponentOrGameObject(f.PropertyType)) {
+                                    script.WriteLine("                        o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Serializer.UnserializePath(reader_ASXDRGBHU); //property component or gameobject");
+                                } else {
+                                    string fsname = FixName(f.PropertyType.FullName).ToLower();
+                                    script.WriteLine("                        o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Ser_" + fsname + ".Res( reader_ASXDRGBHU ); //property");
+                                }
+                            }
+
+                            script.WriteLine("                        reader_ASXDRGBHU.Close();");
+                            script.WriteLine("                    } catch { }");
+                            script.WriteLine("                }");
+                        }
+
+                        #endregion load fields and properties
+
+                        script.WriteLine("            }");
+                        script.WriteLine("            return (object)o;");
+                        script.WriteLine("        }");
+                    }
+
+                    script.WriteLine("    }");
+                    script.WriteLine("}");
+
+                    script.Close();
+
+                    bindscript.WriteLine("            bindsSer.Add(typeof(" + tFullName + "),new Action<Writer,object>(Ser_" + sName + ".Ser));");
+                    bindscript.WriteLine("            bindsRes.Add(typeof(" + tFullName + "),new Func<Reader,object,object>(Ser_" + sName + ".Res));");
+                }
+            }
+
+            bindscript.WriteLine("        }");
+            bindscript.WriteLine("    }");
+            bindscript.WriteLine("}");
+            bindscript.Close();
+        }
+
+        public static void GenerateCodeOld() {
+            //enable extensions
+            Serializer.InitHooks();
+
+            string path = new DirectoryInfo(Application.dataPath).FullName + "/HBCore/HBS/GeneratedCode";
+            Directory.CreateDirectory(path);
+
+            StreamWriter bindscript = File.CreateText(path + "/SerializerBinder.cs");
+            bindscript.WriteLine("using UnityEngine;");
+            bindscript.WriteLine("using System;");
+            bindscript.WriteLine("using System.Collections;");
+            bindscript.WriteLine("using System.Collections.Generic;");
+            bindscript.WriteLine("namespace HBS {");
+            bindscript.WriteLine("    public static partial class SerializerBinder {");
+            bindscript.WriteLine("        static SerializerBinder() {");
+
+            Assembly[] assemblies = GetAssemblies();
+            foreach (Assembly a in assemblies) {
+                string aName = FixName(a.GetName().Name);
+                Directory.CreateDirectory(path + "/" + aName);
+
+                Type[] classes = GetClasses(a);
+                foreach (Type t in classes) {
+                    bool isForPart = false; //do we wana serialize a HB part?
+                    bool isOnlyComponent = false; //do we jsut wana serialize the component without any values .. this to make the serialize put the component on it but then leave it alone...
+
+                    //if Assembly-CSharp then check for attribute
+                    if (a.FullName.Contains("Assembly-CSharp") || a.FullName.Contains("Assembly-CSharp-firstpass")) {
+                        object[] attributes = t.GetCustomAttributes(typeof(HBS.SerializeAttribute), false);
+                        object[] partAttributes = t.GetCustomAttributes(typeof(HBS.SerializePartAttribute), false);
+                        object[] compOnlyAttributes = t.GetCustomAttributes(typeof(HBS.SerializeComponentOnlyAttribute), false);
+                        if (attributes.Length == 0 && partAttributes.Length == 0 && compOnlyAttributes.Length == 0) {
+                            continue;
+                        }
+                        if (partAttributes.Length > 0) {
+                            isForPart = true;
+                        }
+                        if (compOnlyAttributes.Length > 0) {
+                            isOnlyComponent = true;
+                        }
+                    }
+
+                    PropertyInfo[] properties = GetProperties(t);
+                    FieldInfo[] fields = GetFields(t);
+
+                    string tFullName = FixFullName(t.FullName);
+                    string sName = FixName(t.FullName).ToLower();
+                    string resourcesOffsetPath = "";
+
+                    StreamWriter script = null;
+
+                    try {
+                        script = File.CreateText(path + "/" + aName + "/Ser_" + sName + ".cs");
+                    } catch {
+                        continue;
+                    }
+
+                    script.WriteLine("using UnityEngine;");
+                    script.WriteLine("using UnityEngine.UI;");
+                    script.WriteLine("using System;");
+
+                    script.WriteLine("namespace HBS {");
+
+                    script.WriteLine("    public static class Ser_" + sName + " {");
+
+                    if (isOnlyComponent) {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer, object oo ) {}");
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object oo = null ) { return oo; }");
+                    } else if (isForPart) {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer, object oo ) {");
+                        script.WriteLine("            if( writer.WriteNull(oo) ) { return; }");
+                        script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+                        //script.WriteLine("            o.UnReadFromPropertiesImmediate();");
+                        script.WriteLine("            writer.Write(o.PropertiesToString());");
+
+                        #region save part field/properties
+
+                        foreach (FieldInfo f in fields) {
+                            if (f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute
+                            if (f.FieldType.IsArray) {
+                                script.WriteLine("            if( writer.WriteNull(o." + f.Name + ") == false ) {");
+                                script.WriteLine("                writer.Write(o." + f.Name + ".Length);");
+                                script.WriteLine("                for( int i = 0; i < o." + f.Name + ".Length; i++ ) {");
+                                Type et = f.FieldType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(writer,o." + f.Name + "[i]); //field special case");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                writer.Write(o." + f.Name + "[i]); //field primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                HBS.Serializer.SerializePath(writer,o." + f.Name + "[i]); //field component or gameObject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                HBS.Ser_" + fsname + ".Ser( writer , o." + f.Name + "[i]); //field");
+                                }
+                                script.WriteLine("            } }");
+                            } else {
+                                if (IsSpecialCase(f.FieldType)) {
+                                    script.WriteLine("            HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(f.FieldType.FullName) + ")].Invoke(writer,o." + f.Name + "); //field special case");
+                                } else if (IsPrimitive(f.FieldType)) {
+                                    script.WriteLine("            writer.Write(o." + f.Name + "); //field primitive");
+                                } else if (IsComponentOrGameObject(f.FieldType)) {
+                                    script.WriteLine("            HBS.Serializer.SerializePath(writer,o." + f.Name + "); //field component or gameObject");
+                                } else {
+                                    string fsname = FixName(f.FieldType.FullName).ToLower();
+                                    script.WriteLine("            HBS.Ser_" + fsname + ".Ser( writer , o." + f.Name + "); //field");
+                                }
+                            }
+                        }
+
+                        foreach (PropertyInfo f in properties) {
+                            if (f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute
+                            if (f.PropertyType.IsArray) {
+                                script.WriteLine("            if( writer.WriteNull(o." + f.Name + ") == false ) {");
+                                script.WriteLine("                writer.Write(o." + f.Name + ".Length);");
+                                script.WriteLine("                for( int i = 0; i < o." + f.Name + ".Length; i++ ) {");
+                                Type et = f.PropertyType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(writer,o." + f.Name + "[i]); //property special case");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("            writer.Write(o." + f.Name + "[i]); //property primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                HBS.Serializer.SerializePath(writer,o." + f.Name + "[i]); //property component or gameObject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                HBS.Ser_" + fsname + ".Ser( writer , o." + f.Name + "[i]); //property");
+                                }
+                                script.WriteLine("            } }");
+                            } else {
+                                if (IsSpecialCase(f.PropertyType)) {
+                                    script.WriteLine("            HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(f.PropertyType.FullName) + ")].Invoke(writer,o." + f.Name + "); //property special case");
+                                } else if (IsPrimitive(f.PropertyType)) {
+                                    script.WriteLine("            writer.Write(o." + f.Name + "); //property primitive");
+                                } else if (IsComponentOrGameObject(f.PropertyType)) {
+                                    script.WriteLine("            HBS.Serializer.SerializePath(writer,o." + f.Name + "); //property component or gameObject");
+                                } else {
+                                    string fsname = FixName(f.PropertyType.FullName).ToLower();
+                                    script.WriteLine("            HBS.Ser_" + fsname + ".Ser( writer , o." + f.Name + "); //property");
+                                }
+                            }
+                        }
+
+                        #endregion save part field/properties
+
+                        script.WriteLine("        }");
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object oo = null ) {");
+                        script.WriteLine("            if(reader.ReadNull()){ return null; }");
+                        script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+                        script.WriteLine("            try { o.PropertiesFromString((string)reader.Read()); } catch {}");
+
+                        #region save field/properties
+
+                        foreach (FieldInfo f in fields) {
+                            if (f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute
+                            if (f.FieldType.IsArray) {
+                                script.WriteLine("            if( reader.ReadNull() == false ) {");
+                                script.WriteLine("                " + FixFullName(f.FieldType.FullName) + " " + f.Name + "_arr = new " + FixFullName(f.FieldType.GetElementType().FullName) + "[(int)reader.Read()];");
+                                script.WriteLine("                for( int i = 0; i < " + f.Name + "_arr.Length; i++ ) {");
+
+                                Type et = f.FieldType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(reader,typeof(" + FixFullName(et.FullName) + "),o." + f.Name + "); } catch {} //field special case ");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")reader.Read(); } catch {} //field primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.UnserializePath(reader); } catch {} //field component or gameobject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Ser_" + fsname + ".Res( reader ); } catch {} //field");
+                                }
+                                script.WriteLine("                }");
+                                script.WriteLine("            o." + f.Name + " = " + f.Name + "_arr;");
+                                script.WriteLine("            }");
+                            } else {
+                                if (IsSpecialCase(f.FieldType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(f.FieldType.FullName) + ")].Invoke(reader,typeof(" + FixFullName(f.FieldType.FullName) + "),o." + f.Name + "); } catch {} //field special case ");
+                                } else if (IsPrimitive(f.FieldType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")reader.Read(); } catch {} //field primitive");
+                                } else if (IsComponentOrGameObject(f.FieldType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Serializer.UnserializePath(reader); } catch {} //field component or gameobject");
+                                } else {
+                                    string fsname = FixName(f.FieldType.FullName).ToLower();
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Ser_" + fsname + ".Res( reader ); } catch {} //field");
+                                }
+                            }
+                        }
+
+                        foreach (PropertyInfo f in properties) {
+                            if (f.GetCustomAttributes(typeof(SerializePartVarAttribute), true).Length == 0) { continue; } //skip fields that dont have SerializePartVarAttribute
+                            if (f.PropertyType.IsArray) {
+                                script.WriteLine("            if( reader.ReadNull() == false ) {");
+                                script.WriteLine("                " + FixFullName(f.PropertyType.FullName) + " " + f.Name + "_arr = new " + FixFullName(f.PropertyType.GetElementType().FullName) + "[(int)reader.Read()];");
+                                script.WriteLine("                for( int i = 0; i < " + f.Name + "_arr.Length; i++ ) {");
+                                Type et = f.PropertyType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(reader,typeof(" + FixFullName(et.FullName) + "),o." + f.Name + "); } catch {} //field special case ");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")reader.Read(); } catch {} //field primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.UnserializePath(reader); } catch {} //field component or gameobject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Ser_" + fsname + ".Res( reader ); } catch {} //field");
+                                }
+                                script.WriteLine("                }");
+                                script.WriteLine("            o." + f.Name + " = " + f.Name + "_arr;");
+                                script.WriteLine("            }");
+                            } else {
+                                if (IsSpecialCase(f.PropertyType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(f.PropertyType.FullName) + ")].Invoke(reader,typeof(" + FixFullName(f.PropertyType.FullName) + "),o." + f.Name + "); } catch {} //property special case");
+                                } else if (IsPrimitive(f.PropertyType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")reader.Read(); } catch {} //property primitive");
+                                } else if (IsComponentOrGameObject(f.PropertyType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Serializer.UnserializePath(reader); } catch {} //property component or gameobject");
+                                } else {
+                                    string fsname = FixName(f.PropertyType.FullName).ToLower();
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Ser_" + fsname + ".Res( reader ); } catch {}//property");
+                                }
+                            }
+                        }
+
+                        #endregion save field/properties
+
+                        script.WriteLine("            return (object)o;");
+                        script.WriteLine("        }");
+                    } else if (t.IsEnum) {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer, object oo ) {");
+                        script.WriteLine("            if( writer.WriteNull(oo) ) { return; }");
+                        script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+                        script.WriteLine("            writer.Write(o.ToString());");
+                        script.WriteLine("        }");
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object o = null ) {");
+                        script.WriteLine("            if(reader.ReadNull()){ return null; }");
+                        script.WriteLine("            return (object)(" + tFullName + ")System.Enum.Parse(typeof(" + tFullName + "),(string)reader.Read());");
+                        script.WriteLine("        }");
+                    } else if (IsForResources(t, out resourcesOffsetPath)) {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer, object oo ) {");
+                        script.WriteLine("            if( writer.WriteNull(oo)) { return; }");
+                        script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+                        script.WriteLine("            writer.Write(o.name);");
+                        script.WriteLine("        }");
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object o = null) {");
+                        script.WriteLine("            if(reader.ReadNull()){ return null; }");
+                        if (resourcesOffsetPath == "") {
+                            script.WriteLine("            return (object)Resources.Load<" + tFullName + ">((string)reader.Read());");
+                        } else {
+                            script.WriteLine("            return (object)Resources.Load<" + tFullName + ">(\"" + resourcesOffsetPath + "/\"+(string)reader.Read());");
+                        }
+                        script.WriteLine("        }");
+                    } else {
+                        script.WriteLine("        public static void Ser( HBS.Writer writer , object oo ) {");
+                        script.WriteLine("            if( writer.WriteNull(oo)) { return; }");
+                        script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+
+                        #region save fields/properties
+
+                        foreach (FieldInfo f in fields) {
+                            if (f.FieldType.IsArray) {
+                                script.WriteLine("            if( writer.WriteNull(o." + f.Name + ") == false ) {");
+                                script.WriteLine("                writer.Write(o." + f.Name + ".Length);");
+                                script.WriteLine("                for( int i = 0; i < o." + f.Name + ".Length; i++ ) {");
+                                Type et = f.FieldType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(writer,o." + f.Name + "[i]); //field special case");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                writer.Write(o." + f.Name + "[i]); //field primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                HBS.Serializer.SerializePath(writer,o." + f.Name + "[i]); //field component or gameObject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                HBS.Ser_" + fsname + ".Ser( writer , o." + f.Name + "[i]); //field");
+                                }
+                                script.WriteLine("            } }");
+                            } else {
+                                if (IsSpecialCase(f.FieldType)) {
+                                    script.WriteLine("            HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(f.FieldType.FullName) + ")].Invoke(writer,o." + f.Name + "); //field special case");
+                                } else if (IsPrimitive(f.FieldType)) {
+                                    script.WriteLine("            writer.Write(o." + f.Name + "); //field primitive");
+                                } else if (IsComponentOrGameObject(f.FieldType)) {
+                                    script.WriteLine("            HBS.Serializer.SerializePath(writer,o." + f.Name + "); //field component or gameObject");
+                                } else {
+                                    string fsname = FixName(f.FieldType.FullName).ToLower();
+                                    script.WriteLine("            HBS.Ser_" + fsname + ".Ser( writer , o." + f.Name + "); //field");
+                                }
+                            }
+                        }
+
+                        foreach (PropertyInfo f in properties) {
+                            if (f.PropertyType.IsArray) {
+                                script.WriteLine("            if( writer.WriteNull(o." + f.Name + ") == false ) {");
+                                script.WriteLine("                writer.Write(o." + f.Name + ".Length);");
+                                script.WriteLine("                for( int i = 0; i < o." + f.Name + ".Length; i++ ) {");
+                                Type et = f.PropertyType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(writer,o." + f.Name + "[i]); //property special case");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("            writer.Write(o." + f.Name + "[i]); //property primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                HBS.Serializer.SerializePath(writer,o." + f.Name + "[i]); //property component or gameObject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                HBS.Ser_" + fsname + ".Ser( writer , o." + f.Name + "[i]); //property");
+                                }
+                                script.WriteLine("            } }");
+                            } else {
+                                if (IsSpecialCase(f.PropertyType)) {
+                                    script.WriteLine("            HBS.Serializer.specialCaseSerializers[typeof(" + FixFullName(f.PropertyType.FullName) + ")].Invoke(writer,o." + f.Name + "); //property special case");
+                                } else if (IsPrimitive(f.PropertyType)) {
+                                    script.WriteLine("            writer.Write(o." + f.Name + "); //property primitive");
+                                } else if (IsComponentOrGameObject(f.PropertyType)) {
+                                    script.WriteLine("            HBS.Serializer.SerializePath(writer,o." + f.Name + "); //property component or gameObject");
+                                } else {
+                                    string fsname = FixName(f.PropertyType.FullName).ToLower();
+                                    script.WriteLine("            HBS.Ser_" + fsname + ".Ser( writer , o." + f.Name + "); //property");
+                                }
+                            }
+                        }
+
+                        #endregion save fields/properties
+
+                        script.WriteLine("        }");
+
+                        script.WriteLine("        public static object Res( HBS.Reader reader, object oo = null) {");
+                        script.WriteLine("            if(reader.ReadNull()){ return null; }");
+
+                        #region load fields and properties
+
+                        if (IsComponentOrGameObject(t)) {
+                            script.WriteLine("            " + tFullName + " o = (" + tFullName + ")oo;");
+                        } else {
+                            //script.WriteLine("            "+tFullName+" o = ("+tFullName+")Activator.CreateInstance(typeof("+tFullName+"));");
+                            //script.WriteLine("            " + tFullName + " o = (" + tFullName + ")System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(" + tFullName + "));");
+                            script.WriteLine("            " + tFullName + " o = new " + tFullName + "();");
+                        }
+
+                        foreach (FieldInfo f in fields) {
+                            if (f.FieldType.IsArray) {
+                                script.WriteLine("            if( reader.ReadNull() == false ) {");
+                                script.WriteLine("                " + FixFullName(f.FieldType.FullName) + " " + f.Name + "_arr = new " + FixFullName(f.FieldType.GetElementType().FullName) + "[(int)reader.Read()];");
+                                script.WriteLine("                for( int i = 0; i < " + f.Name + "_arr.Length; i++ ) {");
+
+                                Type et = f.FieldType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(reader,typeof(" + FixFullName(et.FullName) + "),o." + f.Name + "); } catch {} //field special case ");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")reader.Read(); } catch {} //field primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.UnserializePath(reader); } catch {} //field component or gameobject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Ser_" + fsname + ".Res( reader ); } catch {} //field");
+                                }
+                                script.WriteLine("                }");
+                                script.WriteLine("            o." + f.Name + " = " + f.Name + "_arr;");
+                                script.WriteLine("            }");
+                            } else {
+                                if (IsSpecialCase(f.FieldType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(f.FieldType.FullName) + ")].Invoke(reader,typeof(" + FixFullName(f.FieldType.FullName) + "),o." + f.Name + "); } catch {} //field special case ");
+                                } else if (IsPrimitive(f.FieldType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")reader.Read(); } catch {} //field primitive");
+                                } else if (IsComponentOrGameObject(f.FieldType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Serializer.UnserializePath(reader); } catch {} //field component or gameobject");
+                                } else {
+                                    string fsname = FixName(f.FieldType.FullName).ToLower();
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.FieldType.FullName) + ")HBS.Ser_" + fsname + ".Res( reader ); } catch {} //field");
+                                }
+                            }
+                        }
+
+                        foreach (PropertyInfo f in properties) {
+                            if (f.PropertyType.IsArray) {
+                                script.WriteLine("            if( reader.ReadNull() == false ) {");
+                                script.WriteLine("                " + FixFullName(f.PropertyType.FullName) + " " + f.Name + "_arr = new " + FixFullName(f.PropertyType.GetElementType().FullName) + "[(int)reader.Read()];");
+                                script.WriteLine("                for( int i = 0; i < " + f.Name + "_arr.Length; i++ ) {");
+                                Type et = f.PropertyType.GetElementType();
+                                if (IsSpecialCase(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(et.FullName) + ")].Invoke(reader,typeof(" + FixFullName(et.FullName) + "),o." + f.Name + "); } catch {} //field special case ");
+                                } else if (IsPrimitive(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")reader.Read(); } catch {} //field primitive");
+                                } else if (IsComponentOrGameObject(et)) {
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Serializer.UnserializePath(reader); } catch {} //field component or gameobject");
+                                } else {
+                                    string fsname = FixName(et.FullName).ToLower();
+                                    script.WriteLine("                try { " + f.Name + "_arr[i] = (" + FixFullName(et.FullName) + ")HBS.Ser_" + fsname + ".Res( reader ); } catch {} //field");
+                                }
+                                script.WriteLine("                }");
+                                script.WriteLine("            o." + f.Name + " = " + f.Name + "_arr;");
+                                script.WriteLine("            }");
+                            } else {
+                                if (IsSpecialCase(f.PropertyType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Serializer.specialCaseUnserializers[typeof(" + FixFullName(f.PropertyType.FullName) + ")].Invoke(reader,typeof(" + FixFullName(f.PropertyType.FullName) + "),o." + f.Name + "); } catch {} //property special case");
+                                } else if (IsPrimitive(f.PropertyType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")reader.Read(); } catch {} //property primitive");
+                                } else if (IsComponentOrGameObject(f.PropertyType)) {
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Serializer.UnserializePath(reader); } catch {} //property component or gameobject");
+                                } else {
+                                    string fsname = FixName(f.PropertyType.FullName).ToLower();
+                                    script.WriteLine("            try { o." + f.Name + " = (" + FixFullName(f.PropertyType.FullName) + ")HBS.Ser_" + fsname + ".Res( reader ); } catch {}//property");
+                                }
+                            }
+                        }
+
+                        #endregion load fields and properties
+
+                        script.WriteLine("            return (object)o;");
+                        script.WriteLine("        }");
+                    }
+
+                    script.WriteLine("    }");
+                    script.WriteLine("}");
+
+                    script.Close();
+
+                    bindscript.WriteLine("            bindsSer.Add(typeof(" + tFullName + "),new Action<Writer,object>(Ser_" + sName + ".Ser));");
+                    bindscript.WriteLine("            bindsRes.Add(typeof(" + tFullName + "),new Func<Reader,object,object>(Ser_" + sName + ".Res));");
+                }
+            }
+
+            bindscript.WriteLine("        }");
+            bindscript.WriteLine("    }");
+            bindscript.WriteLine("}");
+            bindscript.Close();
+        }
+
+        public static void PrintFields() {
+            Assembly[] assemblies = GetAssemblies();//System.AppDomain.CurrentDomain.GetAssemblies();
+            string path = new DirectoryInfo(Application.streamingAssetsPath).Parent.FullName + "/HBS";
+            Directory.CreateDirectory(path);
+            string dump = "";
+            foreach (Assembly a in assemblies) {
+                dump += "A:" + a.GetName().FullName + Environment.NewLine;
+
+                Type[] types = GetClasses(a);
+                foreach (Type t in types) {
+                    if (t.IsEnum) {
+                        dump += "    " + "E:" + t.Name + Environment.NewLine;
+
+                        string[] enums = GetEnums(t);
+                        foreach (string e in enums) {
+                            dump += "    " + "    " + e + Environment.NewLine;
+                        }
+                    } else {
+                        dump += "    " + "T:" + t.Name;
+
+                        Type b = t.BaseType;
+                        while (b != null) {
+                            dump += " " + "B:" + b.Name;
+                            b = b.BaseType;
+                        }
+                        dump += Environment.NewLine;
+
+                        PropertyInfo[] properties = GetProperties(t);
+                        FieldInfo[] fields = GetFields(t);
+
+                        foreach (PropertyInfo p in properties) {
+                            dump += "    " + "    " + "P:" + p.PropertyType.FullName + " " + p.Name + Environment.NewLine;
+                        }
+                        foreach (FieldInfo f in fields) {
+                            dump += "    " + "    " + "F:" + f.FieldType.FullName + " " + f.Name + Environment.NewLine;
+                        }
+                    }
+                }
+            }
+            File.WriteAllText(path + "/serializable_types.txt", dump);
+        }
+    }
+}

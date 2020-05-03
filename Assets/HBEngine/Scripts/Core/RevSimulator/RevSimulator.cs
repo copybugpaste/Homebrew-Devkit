@@ -5,13 +5,13 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 public class RevSimulator : MonoBehaviour {
 
     [Header("Controls")]
-    [Range(0,1)]
+    public bool run = false;
+    [Range(0, 1)]
     public float throttle = 0f;
     public int gear = 0;
 
@@ -62,29 +62,51 @@ public class RevSimulator : MonoBehaviour {
 
     private float dt = 0f;
     private float throttleCutoffTime = 0f;
-    
+    private bool isOn = false;
+
+    private void Start() {
+        if (engineAudioClip != null) {
+            engineAudioClip.BakeAudioClips();
+            engineAudioClip.SetReady();
+        }
+    }
+
     void Update() {
+
+        if (run) {
+            if (isOn == false) {
+                isOn = true;
+                engineAudioClip.IgniteEngine();
+            }
+        } else {
+            if (isOn) {
+                isOn = false;
+                engineAudioClip.UnIgniteEngine();
+            }
+            throttle = 0f;
+        }
+
         dt = Time.smoothDeltaTime;
 
         internalThrottle = Mathf.Clamp01(throttle);
         internalAudioThrottle = Mathf.Clamp01(throttle);
 
-        if ( internalRPM > redlineRPM - throttleCutoffRPM ) {
+        if (internalRPM > redlineRPM - throttleCutoffRPM) {
             internalThrottle = 0f;
             throttleCutoffTime = Time.time + throttleCutoffSeconds;
         }
-        if( Time.time < throttleCutoffTime ) {
+        if (Time.time < throttleCutoffTime) {
             internalThrottle = 0f;
         }
-        
-        if( internalRPM < idleRPM ) { internalThrottle = 1f; }
-        if( internalRPM <= idleRPM ) { internalAudioThrottle = 1f; }
+
+        if (internalRPM < idleRPM) { internalThrottle = 1f; }
+        if (internalRPM <= idleRPM) { internalAudioThrottle = 1f; }
 
         if (smoothInternalRPM > shiftUpRPM && gear < gearRatios.Length - 1) { gear++; ShiftGear(); }
         if (smoothInternalRPM < shiftDownRPM && internalThrottle <= 0f && gear > 0) { gear--; ShiftGear(); }
-        
-        internalTorque = torqueCurve.Evaluate(internalRPM/redlineRPM) * maxTorque * internalThrottle;
-        
+
+        internalTorque = torqueCurve.Evaluate(internalRPM / redlineRPM) * maxTorque * internalThrottle;
+
         if (gear > gearRatios.Length - 1) { gear = gearRatios.Length - 1; }
         if (gear < 0) { gear = 0; }
         gearRatio = overallGearRatio * gearRatios[gear];
@@ -98,16 +120,16 @@ public class RevSimulator : MonoBehaviour {
         outRPMAcceleration = RadSecToRPM((outTorque / outInertia) * dt);
         outRPMDeceleration = RadSecToRPM((outCounterTorque / outInertia) * dt) * (1f - Mathf.Sqrt(internalThrottle));
 
-        outRPM += (outRPMAcceleration-outRPMDeceleration) * dt;
-       
+        outRPM += (outRPMAcceleration - outRPMDeceleration) * dt;
+
         if (outRPM > outRedlineRPM) { outRPM = outRedlineRPM; }
         if (outRPM < outIdleRPM) { outRPM = outIdleRPM; }
-        
+
         internalRPM = outRPM / gearRatio;
-        
+
         smoothInternalAudioThrottle = Mathf.Lerp(smoothInternalAudioThrottle, internalAudioThrottle, smoothInternalAudioThrottleSpeedFactor);
         smoothInternalRPM = Mathf.Lerp(smoothInternalRPM, internalRPM, smoothIneralRPMSpeedFactor);
-        
+
         if (engineAudioClip != null) {
             engineAudioClip.shift = Mathf.InverseLerp(idleRPM, redlineRPM, smoothInternalRPM);
             engineAudioClip.accel = smoothInternalAudioThrottle;
@@ -124,8 +146,11 @@ public class RevSimulator : MonoBehaviour {
             engineAudioClip.ShiftGear();
         }
     }
+    public bool drawGizmos = false;
 
+#if UNITY_EDITOR
     private void OnDrawGizmosSelected() {
+        if (!drawGizmos) { return; }
         Gizmos.matrix = transform.localToWorldMatrix;
         Gizmos.color = Color.white;
         var right = Vector3.right;
@@ -133,7 +158,7 @@ public class RevSimulator : MonoBehaviour {
         var a = 0f;
         var radius = 1f;
         var prePoint = Quaternion.Euler(0, 0, a) * right * radius;
-        while ( a < 360 ) {
+        while (a < 360) {
             a += inc;
             var point = Quaternion.Euler(0, 0, a) * right * radius;
             Gizmos.DrawLine(prePoint, point);
@@ -145,21 +170,22 @@ public class RevSimulator : MonoBehaviour {
         Gizmos.DrawLine(Vector3.zero, needlePoint);
 
         radius = 1.2f;
-        Handles.Label(transform.position + transform.up * radius * 0.5f, smoothInternalRPM.ToString() + " RPM");
-        Handles.Label(transform.position + (Quaternion.Euler(0, 0, 225f) * right * radius), redlineRPM.ToString() + " RPM");
-        Handles.Label(transform.position + (Quaternion.Euler(0, 0, -45f) * right * radius), idleRPM.ToString() + " RPM");
+        UnityEditor.Handles.Label(transform.position + transform.up * radius * 0.5f, smoothInternalRPM.ToString() + " RPM");
+        UnityEditor.Handles.Label(transform.position + (Quaternion.Euler(0, 0, 225f) * right * radius), redlineRPM.ToString() + " RPM");
+        UnityEditor.Handles.Label(transform.position + (Quaternion.Euler(0, 0, -45f) * right * radius), idleRPM.ToString() + " RPM");
 
         Gizmos.color = Color.red;
         inc = 5f;
-        a = -45+ (shiftUpRPM / redlineRPM*270f);
+        a = -45 + (shiftUpRPM / redlineRPM * 270f);
         radius = 0.9f;
         prePoint = Quaternion.Euler(0, 0, a) * right * radius;
         while (a < 225f) {
             a += inc;
-            if( a > 225f ) { a = 225f; }
+            if (a > 225f) { a = 225f; }
             var point = Quaternion.Euler(0, 0, a) * right * radius;
             Gizmos.DrawLine(prePoint, point);
             prePoint = point;
         }
     }
+#endif
 }

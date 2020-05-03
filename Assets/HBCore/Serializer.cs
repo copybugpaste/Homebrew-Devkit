@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
+using System.Text.RegularExpressions;
 
 #if UNITY_EDITOR
 #endif
 
 namespace HBS {
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //wills erialize this class properly
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //wills serialize this class properly
     public class SerializeAttribute : System.Attribute { }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //will serialize this class as part ( only saves properties )
@@ -18,601 +19,69 @@ namespace HBS {
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)] //will serialize this class as part ( only saves properties )
     public class SerializePartVarAttribute : System.Attribute { }
-    
+
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct)] //will serialize component only , this will make serializer put this component back on but does not set any of its values
     public class SerializeComponentOnlyAttribute : System.Attribute { }
 
     public static class Serializer {
-        public static bool debug = true;
+
+        public static bool debug = false;
         public static int prefix = 1;
+        public static string persistentDataPath;
+
+        public static SerializerInstance instance;
         public static MethodInfo serializeMethod;
         public static MethodInfo unserializeMethod;
-        public static GameObject currentRoot;
+        public static GameObject currentRoot; //used in UnserializePath function ( no issue with unserializing multiple hbps at same time , this var is set before unserializing a chunk that never runs async )
         public static Dictionary<Type, Action<Writer, object>> specialCaseSerializers = new Dictionary<Type, Action<Writer, object>>();
         public static Dictionary<Type, Func<Reader, Type, object, object>> specialCaseUnserializers = new Dictionary<Type, Func<Reader, Type, object, object>>();
+        public static List<string> cacheFolders = new List<string>();
 
-        public static void LoadExtensions() {
-            specialCaseSerializers.Clear();
-            specialCaseUnserializers.Clear();
-            specialCaseSerializers.Add(typeof(Mesh), new Action<Writer, object>(MeshExtension.SaveMesh));
-            specialCaseUnserializers.Add(typeof(Mesh), new Func<Reader, Type, object, object>(MeshExtension.LoadMesh));
-            specialCaseSerializers.Add(typeof(RevAudioClip), new Action<Writer, object>(RevExtension.SaveRevAudioClip));
-            specialCaseUnserializers.Add(typeof(RevAudioClip), new Func<Reader, Type, object, object>(RevExtension.LoadRevAudioClip));
-        }
-
-        public static void SaveGameObject(string path, GameObject gameObject) {
-
-           
+        public static bool InitHooks() {
             if (serializeMethod == null || unserializeMethod == null) {
                 HookToSerializeMethods();
             }
-            if (serializeMethod == null || unserializeMethod == null) { return; }
-            
-            Writer w = new Writer();
-            currentRoot = gameObject;
-            List<GameObject> children = GetChildGameObjects(gameObject);
-            children.Insert(0, currentRoot);
-            w.Write(prefix);
-            if( prefix > 0 ) {
-                #region save gameobject v1
-                w.Write(children.Count);
-                foreach (GameObject g in children) {
-                    if (g != currentRoot) {
-                        SerializePath(w, g.transform.parent);
+            return serializeMethod != null && unserializeMethod != null;
+        }
+        private static void HookToSerializeMethods() {
+            foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies()) {
+                if (a.GetName().Name == "Assembly-CSharp") {
+                    Type binder = a.GetType("HBS.SerializerBinder");
+                    if (binder == null) {
+                        Debug.Log("No code for serialization generated");
+                        return;
                     }
-                    List<Component> components = GetComponents(g);
-                    w.Write(components.Count);
-                    foreach (Component c in components) {
-                        w.Write(c.GetType().FullName);
+                    serializeMethod = binder.GetMethod("Serialize");
+                    unserializeMethod = binder.GetMethod("Unserialize");
+                    if (serializeMethod == null || unserializeMethod == null) {
+                        Debug.Log("Cant find binder serialization methods");
+                        return;
                     }
                 }
+            }
+        }
 
-                foreach (GameObject g in children) {
-                    Serialize(w, g);
-                    List<Component> components = GetComponents(g);
-                    w.Write(components.Count);
-                    int i = 0;
-                    foreach (Component c in components) {
-                        w.Write(c.GetType().FullName);
-                        Writer w2 = new Writer();
-                        Serialize(w2, c);
-                        w.Write(w2.stream.ToArray());
-                        w2.Close();
-                        i++;
-                    }
-                }
-                #endregion
+        public static void OverrideSerializeType(Type type, Action<Writer, object> action) {
+            if (specialCaseSerializers.ContainsKey(type) == false) {
+                specialCaseSerializers.Add(type, action);
             } else {
-                #region save gameobject v0
-                w.Write(children.Count);
-                foreach (GameObject g in children) {
-                    if (g != currentRoot) {
-                        SerializePath(w, g.transform.parent);
-                    }
-                    List<Component> components = GetComponents(g);
-                    w.Write(components.Count);
-                    foreach (Component c in components) {
-                        w.Write(c.GetType().FullName);
-                    }
-                }
-
-                foreach (GameObject g in children) {
-                    Serialize(w, g);
-                    List<Component> components = GetComponents(g);
-                    w.Write(components.Count);
-                    int i = 0;
-                    foreach (Component c in components) {
-                        w.Write(c.GetType().FullName);
-                        Serialize(w, c);
-                        i++;
-                    }
-                }
-                
-                #endregion
+                specialCaseSerializers[type] = action;
             }
-
-
-            w.Save(path);
-            w.Close();
-
         }
-
-        public static IEnumerator SaveGameObjectAsync(string path, GameObject gameObject, int speed, System.Action<GameObject> ret, System.Action<float> onProgress) {
-
-            
-            PostProgress(onProgress, 0);
-
-            var cc = 0;
-
-            if (serializeMethod == null || unserializeMethod == null) {
-                HookToSerializeMethods();
-            }
-            if (serializeMethod == null || unserializeMethod == null) { yield break; }
-
-            Writer w = new Writer();
-            currentRoot = gameObject;
-            List<GameObject> children = GetChildGameObjects(gameObject);
-            children.Insert(0, currentRoot);
-            w.Write(prefix);
-            if (prefix > 0) {
-                #region save gameobject v1
-                w.Write(children.Count);
-
-                var ii = 0;
-                foreach (GameObject g in children) {
-
-                    PostProgress(onProgress, (float)ii / (float)children.Count * 0.5f);
-
-                    if (CheckWait(speed * 2, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-                    
-                    if (g != currentRoot) {
-                        SerializePath(w, g.transform.parent);
-                    }
-                    List<Component> components = GetComponents(g);
-                    w.Write(components.Count);
-                    foreach (Component c in components) {
-
-                        if (CheckWait(speed * 2, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        w.Write(c.GetType().FullName);
-                    }
-
-                    ii++;
-                }
-
-                ii = 0;
-                foreach (GameObject g in children) {
-
-                    PostProgress(onProgress, 0.5f + ((float)ii / (float)children.Count * 0.5f));
-
-                    if (CheckWait(speed * 2, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-
-                    Serialize(w, g);
-                    List<Component> components = GetComponents(g);
-                    w.Write(components.Count);
-                    var i = 0;
-                    foreach (Component c in components) {
-
-                        if (CheckWait(speed, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        w.Write(c.GetType().FullName);
-                        Writer w2 = new Writer();
-                        Serialize(w2, c);
-                        w.Write(w2.stream.ToArray());
-                        w2.Close();
-                        i++;
-                    }
-                    ii++;
-                }
-                #endregion
+        public static void OverrideUnserializeType(Type type, Func<Reader, Type, object, object> func) {
+            if (specialCaseUnserializers.ContainsKey(type) == false) {
+                specialCaseUnserializers.Add(type, func);
             } else {
-                #region save gameobject v0
-                w.Write(children.Count);
-
-                var ii = 0;
-                foreach (GameObject g in children) {
-
-                    PostProgress(onProgress, (float)ii / (float)children.Count * 0.5f);
-
-                    if (CheckWait(speed * 2, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-
-                    if (g != currentRoot) {
-                        SerializePath(w, g.transform.parent);
-                    }
-                    List<Component> components = GetComponents(g);
-                    w.Write(components.Count);
-                    foreach (Component c in components) {
-
-                        if (CheckWait(speed * 2, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        w.Write(c.GetType().FullName);
-                    }
-
-                    ii++;
-                }
-
-                ii = 0;
-                foreach (GameObject g in children) {
-
-                    PostProgress(onProgress, 0.5f + ((float)ii / (float)children.Count * 0.5f));
-
-                    if (CheckWait(speed, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-
-                    Serialize(w, g);
-                    List<Component> components = GetComponents(g);
-                    w.Write(components.Count);
-                    int i = 0;
-                    foreach (Component c in components) {
-
-                        if (CheckWait(speed, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        w.Write(c.GetType().FullName);
-                        Serialize(w, c);
-                        i++;
-                    }
-
-                    ii++;
-                }
-
-                #endregion
-            }
-
-            w.Save(path);
-            w.Close();
-        }
-
-
-        public static GameObject LoadGameObject(string path) {
-
-            if (serializeMethod == null || unserializeMethod == null) {
-                HookToSerializeMethods();
-            }
-            if (serializeMethod == null || unserializeMethod == null) { return null; }
-            if (File.Exists(path) == false) { return null; }
-            
-            Reader r = new Reader(path);
-            try {
-                int prefix = (int)r.Read();
-                if( prefix > 0 ) {
-                    #region load gameobject v1
-                    int gameObjectCount = (int)r.Read();
-                    GameObject[] objs = new GameObject[gameObjectCount];
-                    for (int i = 0; i < gameObjectCount; i++) {
-                        objs[i] = new GameObject("Child" + i.ToString());
-                        if (i == 0) {
-                            currentRoot = objs[i];
-                            objs[i].SetActive(false);
-                            objs[i].transform.parent = currentRoot.transform;
-                        } else {
-                            object parentFromPath = UnserializePath(r);
-                            if (parentFromPath != null) {
-                                objs[i].transform.SetParent((Transform)parentFromPath);
-                            } else {
-                                Debug.LogError("coudnt find path for " + objs[i].ToString());
-                                objs[i].transform.parent = currentRoot.transform;
-                            }
-                        }
-                        try {
-                            int componentCount = (int)r.Read();
-                            for (int ii = 0; ii < componentCount; ii++) {
-                                string typeName = (string)r.Read();
-                                Type ctype = Type.GetType(typeName);
-                                if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                                if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                                if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                                if (ctype != typeof(Transform)) {
-                                    objs[i].AddComponent(ctype);
-                                }
-                            }
-                        } catch (System.Exception e) {
-                            LogWarning(e.ToString());
-                        }
-                    }
-                    for (int i = 0; i < gameObjectCount; i++) {
-                        try {
-                            Unserialize(r, typeof(GameObject), (object)objs[i]);
-                            int componentCount = (int)r.Read();
-                            Component[] comps = objs[i].GetComponents<Component>();
-                            for (int ii = 0; ii < componentCount; ii++) {
-                                string typeName = (string)r.Read();
-                                byte[] compData = (byte[])r.Read();
-                                try {
-                                    Reader r2 = new Reader(compData);
-                                    Type ctype = Type.GetType(typeName);
-                                    if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                                    if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                                    if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                                    Component c = comps[ii];//objs[i].GetComponent(ctype);
-                                    
-                                    Unserialize(r2, ctype, (object)c);
-                                    r2.Close();
-                                } catch(System.Exception e) {
-                                    LogWarning(e.ToString());
-                                }
-                            }
-                        } catch (System.Exception e) {
-                            LogWarning(e.ToString());
-                        }
-                    }
-
-                    #endregion
-                } else {
-                    #region load gameobject v0
-                    int gameObjectCount = (int)r.Read();
-                    GameObject[] objs = new GameObject[gameObjectCount];
-                    for (int i = 0; i < gameObjectCount; i++) {
-                        objs[i] = new GameObject("Child" + i.ToString());
-                        if (i == 0) {
-                            currentRoot = objs[i];
-                            objs[i].SetActive(false);
-                            objs[i].transform.parent = currentRoot.transform;
-                        } else {
-                            object parentFromPath = UnserializePath(r);
-                            if (parentFromPath != null) {
-                                objs[i].transform.SetParent((Transform)parentFromPath);
-                            } else {
-                                Debug.LogError("coudnt find path for " + objs[i].ToString());
-                                objs[i].transform.parent = currentRoot.transform;
-                            }
-                        }
-                        try {
-                            int componentCount = (int)r.Read();
-                            for (int ii = 0; ii < componentCount; ii++) {
-                                string typeName = (string)r.Read();
-                                Type ctype = Type.GetType(typeName);
-                                if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                                if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                                if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                                if (ctype != typeof(Transform)) {
-                                    objs[i].AddComponent(ctype);
-                                }
-                            }
-                        } catch (System.Exception e) {
-                            LogWarning(e.ToString());
-                        }
-                    }
-                    for (int i = 0; i < gameObjectCount; i++) {
-                        try {
-                            Unserialize(r, typeof(GameObject), (object)objs[i]);
-                            int componentCount = (int)r.Read();
-                            Component[] comps = objs[i].GetComponents<Component>();
-                            for (int ii = 0; ii < componentCount; ii++) {
-                                string typeName = (string)r.Read();
-                                Type ctype = Type.GetType(typeName);
-                                Component c = comps[ii];
-                                Unserialize(r, ctype, (object)c);
-                            }
-                        } catch (System.Exception e) {
-                            LogWarning(e.ToString());
-                        }
-                    }
-                    #endregion
-                }
-            } catch (System.Exception e) {
-                LogWarning(e.ToString());
-            } finally {
-            r.Close();
-            }
-            return currentRoot;
-        }
-
-        public static IEnumerator LoadGameObjectAsync(string path, int speed, System.Action<GameObject> ret, System.Action<float> onProgress) {
-
-            PostProgress(onProgress, 0);
-
-            var cc = 0;
-
-            if (serializeMethod == null || unserializeMethod == null) {
-                HookToSerializeMethods();
-            }
-            if (serializeMethod == null || unserializeMethod == null) { yield break; }
-            if (File.Exists(path) == false) { yield break; }
-
-            Reader r = new Reader(path);
-            int prefix = (int)r.Read();
-            if (prefix > 0) {
-                #region load gameobject v1
-                int gameObjectCount = (int)r.Read();
-                GameObject[] objs = new GameObject[gameObjectCount];
-                for (int i = 0; i < gameObjectCount; i++) {
-
-                    PostProgress(onProgress, (float)i / (float)gameObjectCount * 0.5f);
-
-                    if (CheckWait(speed * 2, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-
-                    objs[i] = new GameObject("Child" + i.ToString());
-                    if (i == 0) {
-                        currentRoot = objs[i];
-                        objs[i].SetActive(false);
-                        objs[i].transform.parent = currentRoot.transform;
-                    } else {
-                        object parentFromPath = UnserializePath(r);
-                        if (parentFromPath != null) {
-                            objs[i].transform.SetParent((Transform)parentFromPath);
-                        } else {
-                            Debug.LogError("coudnt find path for " + objs[i].ToString());
-                            objs[i].transform.parent = currentRoot.transform;
-                        }
-                    }
-                    int componentCount = (int)r.Read();
-                    for (int ii = 0; ii < componentCount; ii++) {
-
-                        if (CheckWait(speed * 2, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        string typeName = (string)r.Read();
-                        Type ctype = Type.GetType(typeName);
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                        if (ctype != typeof(Transform)) {
-                            objs[i].AddComponent(ctype);
-                        }
-                    }
-                }
-
-                for (int i = 0; i < gameObjectCount; i++) {
-
-                    PostProgress(onProgress, 0.5f + ((float)i / (float)gameObjectCount * 0.5f));
-
-                    if (CheckWait(speed, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-                    int componentCount = 0;
-                    Component[] comps = new Component[0];
-                    try {
-                        Unserialize(r, typeof(GameObject), (object)objs[i]);
-                        componentCount = (int)r.Read();
-                        comps = objs[i].GetComponents<Component>();
-                    } catch (Exception e) {
-                        LogWarning(e.ToString());
-                    }
-                    for (int ii = 0; ii < componentCount; ii++) {
-
-                        if (CheckWait(speed, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        string typeName = (string)r.Read();
-                        byte[] compData = (byte[])r.Read();
-                        try {
-                            Reader r2 = new Reader(compData);
-                            Type ctype = Type.GetType(typeName);
-                            if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                            if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                            if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                            Component c = comps[ii];//objs[i].GetComponent(ctype);
-
-                            Unserialize(r2, ctype, (object)c);
-                            r2.Close();
-                        } catch (System.Exception e) {
-                            LogWarning(e.ToString());
-                        }
-                    }
-                }
-
-                #endregion
-            } else {
-                #region load gameobject v0
-                int gameObjectCount = (int)r.Read();
-                GameObject[] objs = new GameObject[gameObjectCount];
-                for (int i = 0; i < gameObjectCount; i++) {
-
-                    PostProgress(onProgress, (float)i / (float)gameObjectCount * 0.5f);
-
-                    if (CheckWait(speed, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-
-                    objs[i] = new GameObject("Child" + i.ToString());
-                    if (i == 0) {
-                        currentRoot = objs[i];
-                        objs[i].SetActive(false);
-                        objs[i].transform.parent = currentRoot.transform;
-                    } else {
-                        object parentFromPath = UnserializePath(r);
-                        if (parentFromPath != null) {
-                            objs[i].transform.SetParent((Transform)parentFromPath);
-                        } else {
-                            Debug.LogError("coudnt find path for " + objs[i].ToString());
-                            objs[i].transform.parent = currentRoot.transform;
-                        }
-                    }
-                    int componentCount = (int)r.Read();
-                    for (int ii = 0; ii < componentCount; ii++) {
-
-                        if (CheckWait(speed, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        string typeName = (string)r.Read();
-                        Type ctype = Type.GetType(typeName);
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
-                        if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
-                        if (ctype != typeof(Transform)) {
-                            objs[i].AddComponent(ctype);
-                        }
-                    }
-                }
-                for (int i = 0; i < gameObjectCount; i++) {
-
-                    PostProgress(onProgress, 0.5f + ((float)i / (float)gameObjectCount * 0.5f));
-
-                    if (CheckWait(speed, ref cc)) {
-                        yield return new WaitForEndOfFrame();
-                    }
-                    int componentCount = 0;
-                    Component[] comps = new Component[0];
-                    try {
-                        Unserialize(r, typeof(GameObject), (object)objs[i]);
-                        componentCount = (int)r.Read();
-                        comps = objs[i].GetComponents<Component>();
-                    } catch (Exception e) {
-                        LogWarning(e.ToString());
-                    }
-                    for (int ii = 0; ii < componentCount; ii++) {
-
-                        if (CheckWait(speed, ref cc)) {
-                            yield return new WaitForEndOfFrame();
-                        }
-
-                        try {
-                            string typeName = (string)r.Read();
-                            Type ctype = Type.GetType(typeName);
-                            Component c = comps[ii];
-                            Unserialize(r, ctype, (object)c);
-
-                        } catch (Exception e) {
-                            LogWarning(e.ToString());
-                        }
-                    }
-
-                }
-                #endregion
-            }
-
-            r.Close();
-
-            PostProgress(onProgress, 1);
-            ret(currentRoot);
-
-            yield break;
-
-        }
-
-
-        public static void ZipFolderTo(string p, string t) {
-            try {
-                DirectoryInfo dir = new DirectoryInfo(p);
-                FileInfo[] fs = dir.GetFiles();
-                string[] files = new string[fs.Length];
-                int cc = 0;
-                foreach (FileInfo f in fs) {
-                    files[cc] = f.FullName;
-                    cc++;
-                }
-                ZipUtil.Zip(t, files);
-            } catch (System.Exception e) {
-                Debug.LogWarning(e.ToString());
-            }
-        }
-
-        public static void UnzipFolderTo(string p, string t) {
-            try {
-                ZipUtil.Unzip(p, t);
-            } catch (System.Exception e) {
-                Debug.LogWarning(e.ToString());
+                specialCaseUnserializers[type] = func;
             }
         }
 
         public static void Serialize(Writer writer, object o) {
             SerializerBinder.Serialize(writer, o);
         }
-
         public static object Unserialize(Reader reader, Type t, object o = null) {
             return SerializerBinder.Unserialize(reader, t, o);
         }
-
         public static void SerializePath(Writer writer, object o) {
             if (writer.WriteNull(o)) { return; }
 
@@ -662,7 +131,6 @@ namespace HBS {
             p += ".";
             writer.Write(p);
         }
-
         public static object UnserializePath(Reader reader) {
             if (reader.ReadNull()) { return null; }
             if (reader.ReadNull()) { return null; }
@@ -704,63 +172,415 @@ namespace HBS {
             }
         }
 
-        private static void HookToSerializeMethods() {
-            foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies()) {
-                if (a.GetName().Name == "Assembly-CSharp") {
-                    Type binder = a.GetType("HBS.SerializerBinder");
-                    if (binder == null) {
-                        Debug.Log("No code for serialization generated");
-                        return;
-                    }
-                    serializeMethod = binder.GetMethod("Serialize");
-                    unserializeMethod = binder.GetMethod("Unserialize");
-                    if (serializeMethod == null || unserializeMethod == null) {
-                        Debug.Log("Cant find binder serialization methods");
-                        return;
-                    }
+        public static void ZipFolderTo(string p, string t) {
+            try {
+
+                DirectoryInfo dir = new DirectoryInfo(p);
+                List<string> files = new List<string>();
+                foreach (FileInfo f in dir.GetFiles()) {
+                    files.Add(f.FullName);
                 }
+
+                ZipUtil.Zip(t, files.ToArray());
+            } catch (System.Exception e) {
+                Debug.LogError(e.ToString());
             }
         }
-
-        private static List<Component> GetComponents(GameObject o) {
-            List<Component> ret = new List<Component>();
-            //only return components that have binders
-            Component[] comps = o.GetComponents<Component>();
-            foreach (Component c in comps) {
-                if (c == null) { continue; }
-                if (SerializerBinder.bindsSer.ContainsKey(c.GetType())) {
-                    ret.Add(c);
-                }
-            }
-            return ret;
-        }
-
-        private static List<GameObject> GetChildGameObjects(GameObject o) {
-            List<GameObject> ret = new List<GameObject>();
-            foreach (Transform t in o.transform) {
-                ret.Add(t.gameObject);
-                ret.AddRange(GetChildGameObjects(t.gameObject));
-            }
-            return ret;
-        }
-        
-        public static bool CheckWait(int speed, ref int cc) {
-            cc++;
-            return cc % Mathf.Max(1, speed) == 0;
-        }
-
-        static void PostProgress(System.Action<float> onProgress, float f) {
-            if (onProgress != null) {
-                onProgress(f);
+        public static void UnzipFolderTo(string p, string t) {
+            try {
+                ZipUtil.Unzip(p, t);
+            } catch (System.Exception e) {
+                Debug.LogError(e.ToString());
             }
         }
-
         public static void LogWarning(object o) {
             if (debug) {
                 Debug.LogWarning(o);
             }
         }
+        public static string GetRandomID() {
+            return HBWorld.MenuItems.GetNewID();
+        }
+        public static bool DeleteCacheFolder(string path) {
+            if (cacheFolders.Contains(path)) {
+                Directory.Delete(path, true);
+                return true;
+            }
+            Debug.LogWarningFormat("cache didn't contain {0}.", path);
+            return false;
+        }
+        public static string CreateCacheFolder(string path = null) {
+            if (string.IsNullOrEmpty(path)) {
+                path = persistentDataPath;
+            }
+            path += "/temp/" + GetRandomID();
+            Directory.CreateDirectory(path);
+            cacheFolders.Add(path);
+            return WashPath(path);
+        }
+        public static string WashPath(string path) {
+            if (string.IsNullOrEmpty(path)) { return ""; }
+            return Regex.Replace(path, "[\\\\/][\\\\/]*", "/");
+        }
+        public static string WashPath(System.Object o) {
+            return "";
+        }
 
+        public static void OnApplicationQuit() {
+            try {
+                //cleanup all leftover cachfolders if any
+                foreach (string c in cacheFolders) {
+                    if (Directory.Exists(c)) {
+                        Directory.Delete(c, true);
+                        Debug.LogWarningFormat("[OnApplicationQuit] Cleaned up {0}.", c);
+                    }
+                }
+            } catch { }
+        }
+
+        
+        public static class GameObjects {
+
+            public static GameObject LoadGameObject(string path) {
+
+                if (!InitHooks()) { return null; }
+
+                string workPath;
+                string dataPath;
+                Reader r;
+                float mb;
+                if (!StartLoad(path, out r, out workPath, out dataPath, out mb)) { return null; }
+
+                OverrideUnserializeType(typeof(Mesh), (reader, type, mesh) => { return MeshExtension.LoadMesh(workPath, reader, type, mesh); });
+                OverrideUnserializeType(typeof(RevAudioClip), (reader, type, revAudioClip) => { return RevExtension.LoadRevAudioClip(workPath, false, reader, type, revAudioClip); });
+
+                int prefix;
+                int gameObjectCount;
+                GameObject[] objs;
+                ReadGameObjectHead(r, out prefix, out gameObjectCount, out objs);
+
+                GameObject o = null;
+                ReadGameObjectStructureChunk(prefix, r, o, out o, objs, 0, gameObjectCount);
+
+                for (var i = 0; i < gameObjectCount; i++) {
+                    int componentCount;
+                    Component[] comps;
+                    ReadComponentStructureChunk(prefix, r, o, objs, i, 1, out componentCount, out comps);
+
+                    ReadComponentChunk(prefix, r, o, 0, componentCount, componentCount, comps);
+                }
+                
+                if (o != null) { o.SetActive(true); }
+
+                StopLoad(r, workPath);
+
+                return o;
+                
+            }
+            public static bool SaveGameObject(string path, GameObject o) {
+
+                if (o == null) { return false; }
+
+                if (!InitHooks()) { return false; }
+
+                string workPath;
+                string dataPath;
+                Writer w;
+                if (!StartSave(out w, out workPath, out dataPath)) { return false; }
+
+                OverrideSerializeType(typeof(Mesh), (writer, mesh) => { MeshExtension.SaveMesh(writer, workPath, mesh); });
+                OverrideSerializeType(typeof(RevAudioClip), (writer, revAudioClip) => { RevExtension.SaveRevAudioClip(writer, workPath, revAudioClip); });
+
+                List<GameObject> children;
+                WriteGameObjectHead(w, o, out children);
+
+                WriteGameObjectStructureChunk(w, o, children, 0, children.Count);
+
+                WriteComponentDataChunk(w, o, children, 0, children.Count);
+
+                StopSave(w, workPath, dataPath, path);
+
+
+                return true;
+                
+            }
+
+            public static bool StartLoad(string path, out Reader r, out string workPath, out string dataPath, out float mb) {
+                workPath = "";
+                dataPath = "";
+                r = null;
+                mb = 0;
+                try {
+                    if (HBS.Serializer.GameObjects.Unzip(path, out workPath, out dataPath)) {
+                        if (File.Exists(dataPath)) {
+                            r = new Reader(dataPath);
+                            mb = (float)r.stream.Length / 1000000f;
+                            return true;
+                        }
+                    }
+                } catch (Exception e) {
+                    Debug.LogError(e);
+                }
+                return false;
+            }
+            public static bool StartSave(out Writer w, out string workPath, out string dataPath) {
+                workPath = "";
+                dataPath = "";
+                w = null;
+                try {
+                    workPath = CreateCacheFolder();
+
+                    dataPath = workPath + "/data.txt";
+
+                    w = new Writer();
+
+                    return true;
+                } catch (Exception e) {
+                    Debug.LogError(e);
+                    return false;
+                }
+            }
+
+            public static void StopLoad(Reader r, string workPath) {
+                r.Close();
+                DeleteCacheFolder(workPath);
+            }
+            public static bool StopSave(Writer w, string workPath, string dataPath, string path) {
+                try {
+                    w.Save(dataPath);
+
+                    w.Close();
+
+                    Zip(workPath, path);
+
+                    DeleteCacheFolder(workPath);
+
+                    return true;
+                } catch (Exception e) {
+                    Debug.LogError(e);
+                    return false;
+                }
+            }
+
+            public static void ReadGameObjectHead(Reader r, out int prefix, out int gameObjectCount, out GameObject[] objs) {
+
+                prefix = (int)r.Read();
+                gameObjectCount = (int)r.Read();
+                objs = new GameObject[gameObjectCount];
+
+            }
+            public static void WriteGameObjectHead(Writer w, GameObject o, out List<GameObject> children) {
+
+                children = GetChildGameObjects(o);
+                children.Insert(0, o);
+
+                w.Write(prefix);
+                w.Write(children.Count);
+            }
+
+            public static void WriteGameObjectStructureChunk(Writer w, GameObject root, List<GameObject> children, int fromIndex, int length) {
+
+                currentRoot = root;//set current root ( UnserializePath uses this global var ) 
+
+                for (var i = fromIndex; i < fromIndex + length; i++) {
+                    var g = children[i];
+
+                    if (g != currentRoot) {
+                        SerializePath(w, g.transform.parent);
+                    }
+                    var components = GetComponents(g);
+                    w.Write(components.Count);
+                    foreach (var c in components) {
+                        w.Write(c.GetType().FullName);
+                    }
+
+                }
+            }
+            public static void WriteComponentDataChunk(Writer w, GameObject root, List<GameObject> children, int fromIndex, int length) {
+
+                currentRoot = root;//set current root ( UnserializePath uses this global var )                             
+
+                if (prefix > 0) {
+                    for (var i = fromIndex; i < fromIndex + length; i++) {
+                        var g = children[i];
+
+                        Serialize(w, g);
+                        var components = GetComponents(g);
+                        w.Write(components.Count);
+                        foreach (var c in components) {
+                            w.Write(c.GetType().FullName);
+                            var w2 = new Writer();
+                            Serialize(w2, c);
+                            w.Write(w2.stream.ToArray());
+                            w2.Close();
+                        }
+                    }
+                } else {
+                    for (var i = fromIndex; i < fromIndex + length; i++) {
+                        var g = children[i];
+
+                        Serialize(w, g);
+                        var components = GetComponents(g);
+                        w.Write(components.Count);
+                        foreach (var c in components) {
+                            w.Write(c.GetType().FullName);
+                            Serialize(w, c);
+                        }
+                    }
+                }
+            }
+
+            public static void ReadGameObjectStructureChunk(int prefix, Reader r, GameObject root, out GameObject outRoot, GameObject[] objs, int fromIndex, int length) {
+
+                outRoot = root;
+
+                currentRoot = root;//set current root ( UnserializePath uses this global var ) 
+
+                for (var i = fromIndex; i < fromIndex + length; i++) {
+                    objs[i] = new GameObject("Child" + i.ToString());
+                    if (i == 0 && root == null) {
+                        root = objs[i];
+                        currentRoot = root; //set current root ( UnserializePath uses this global var )
+                        outRoot = root;
+                        objs[i].SetActive(false);
+                        objs[i].transform.parent = root.transform;
+                    } else {
+                        var parentFromPath = UnserializePath(r);
+                        if (parentFromPath != null) {
+                            objs[i].transform.SetParent((Transform)parentFromPath);
+                        } else {
+                            Debug.LogError("coudnt find path for " + objs[i].ToString());
+                            objs[i].transform.parent = currentRoot.transform;
+                        }
+                    }
+                    try {
+                        var componentCount = (int)r.Read();
+                        for (var ii = 0; ii < componentCount; ii++) {
+                            var typeName = (string)r.Read();
+                            var ctype = Type.GetType(typeName);
+                            if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
+                            if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
+                            if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
+                            if (ctype != typeof(Transform)) {
+                                objs[i].AddComponent(ctype);
+                            }
+                        }
+                    } catch (System.Exception e) {
+                        LogWarning(e.ToString());
+                    }
+                }
+            }
+            public static void ReadComponentStructureChunk(int prefix, Reader r, GameObject root, GameObject[] objs, int fromIndex, int length, out int componentCount, out Component[] comps) {
+
+                componentCount = 0;
+                comps = null;
+
+                currentRoot = root;//set current root ( UnserializePath uses this global var )
+
+                for (var i = fromIndex; i < fromIndex + length; i++) {
+                    Unserialize(r, typeof(GameObject), (object)objs[i]);
+                    componentCount = (int)r.Read();
+                    comps = (Component[])objs[i].GetComponents<Component>();
+
+                }
+
+            }
+            public static void ReadComponentChunk(int prefix, Reader r, GameObject root, int fromIndex, int length, int componentCount, Component[] comps) {
+
+                currentRoot = root;//set current root ( UnserializePath uses this global var )       
+
+                if (prefix > 0) {
+
+                    for (var ii = fromIndex; ii < fromIndex + length; ii++) {
+                        var typeName = (string)r.Read();
+                        var compData = (byte[])r.Read();
+                        try {
+                            var r2 = new Reader(compData);
+                            var ctype = Type.GetType(typeName);
+                            if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine"); }
+                            if (ctype == null) { ctype = Type.GetType(typeName + ",UnityEngine.UI"); }
+                            if (ctype == null) { ctype = Type.GetType(typeName + ",HBNetworking"); }
+                            var c = comps[ii];//objs[i].GetComponent(ctype);
+
+                            Unserialize(r2, ctype, (object)c);
+                            r2.Close();
+                        } catch (System.Exception e) {
+                            LogWarning(e.ToString());
+                        }
+                    }
+
+                } else {
+
+                    for (var ii = fromIndex; ii < fromIndex + length; ii++) {
+                        var typeName = (string)r.Read();
+                        var ctype = Type.GetType(typeName);
+                        var c = comps[ii];
+                        Unserialize(r, ctype, (object)c);
+                    }
+
+                }
+            }
+
+            public static bool Unzip(string path, out string workPath, out string dataPath) {
+                workPath = "";
+                dataPath = "";
+
+                //return if path does not exist
+                if (File.Exists(path) == false) { return false; }
+
+                //create cache folder
+                workPath = CreateCacheFolder();
+
+                //unzip to
+                UnzipFolderTo(path, workPath);
+
+                //check if its a vehicle hbp wrap
+                if (File.Exists(workPath + "/exported.hbp")) {
+                    var c2 = CreateCacheFolder();
+                    UnzipFolderTo(workPath + "/exported.hbp", c2);
+                    DeleteCacheFolder(workPath);
+                    workPath = c2;
+                    dataPath = c2 + "/data.txt";
+                } else {
+                    dataPath = workPath + "/data.txt";
+                }
+
+                if (File.Exists(dataPath) == false) { return false; }
+
+                return true;
+            }
+            public static bool Zip(string workPath, string path) {
+                try {
+                    ZipFolderTo(workPath, path);
+                } catch (System.Exception e) {
+                    Debug.LogWarning(e.ToString());
+                    return false;
+                }
+                return true;
+            }
+
+            static List<Component> GetComponents(GameObject o) {
+                var ret = new List<Component>();
+                //only return components that have binders
+                var comps = o.GetComponents<Component>();
+                foreach (var c in comps) {
+                    if (c == null) { continue; }
+                    if (SerializerBinder.bindsSer.ContainsKey(c.GetType())) {
+                        ret.Add(c);
+                    }
+                }
+                return ret;
+            }
+            static List<GameObject> GetChildGameObjects(GameObject o) {
+                var ret = new List<GameObject>();
+                foreach (Transform t in o.transform) {
+                    ret.Add(t.gameObject);
+                    ret.AddRange(GetChildGameObjects(t.gameObject));
+                }
+                return ret;
+            }
+
+        }
     }
 
     public class Reader : IDisposable {
@@ -769,7 +589,6 @@ namespace HBS {
 
         public Reader(string file) {
             stream = File.OpenRead(file);
-            //stream = new MemoryStream(File.ReadAllBytes(file));
             reader = new BinaryReader(stream);
         }
 
@@ -777,14 +596,14 @@ namespace HBS {
             stream = new MemoryStream(data);
             reader = new BinaryReader(stream);
         }
-        
+
         public void Close() {
             Dispose();
         }
 
         public bool ReadNull() {
             var read = Read();
-            if(read != null && (char)read == '<') { return true; }
+            if (read != null && (char)read == '<') { return true; }
             return false;
         }
 
@@ -852,7 +671,6 @@ namespace HBS {
                 var r = f.BeginWrite(array, 0, length, null, null);
                 f.EndWrite(r);
             }
-            //File.WriteAllBytes(file, stream.ToArray());
         }
 
         public void Close() {
@@ -917,59 +735,7 @@ namespace HBS {
             writer.Write(o.Length);
             writer.Write(o);
         }
-
-        /*
-        public void Write(object o) {
-            if (o == null) {
-                writer.Write(-1);
-                return;
-            }
-            Type t = o.GetType();
-            if (t == typeof(bool)) {
-                writer.Write(0);
-                writer.Write((bool)o);
-            } else if (t == typeof(Int16)) {
-                writer.Write(1);
-                writer.Write((Int16)o);
-            } else if (t == typeof(Int32)) {
-                writer.Write(2);
-                writer.Write((Int32)o);
-            } else if (t == typeof(Int64)) {
-                writer.Write(3);
-                writer.Write((Int64)o);
-            } else if (t == typeof(UInt16)) {
-                writer.Write(4);
-                writer.Write((UInt16)o);
-            } else if (t == typeof(UInt32)) {
-                writer.Write(5);
-                writer.Write((UInt32)o);
-            } else if (t == typeof(UInt64)) {
-                writer.Write(6);
-                writer.Write((UInt64)o);
-            } else if (t == typeof(float)) {
-                writer.Write(7);
-                writer.Write(Mathf.Round(((float)o) * 10000f) / 10000f);
-            } else if (t == typeof(double)) {
-                writer.Write(8);
-                writer.Write((double)o);
-            } else if (t == typeof(string)) {
-                writer.Write(9);
-                writer.Write((string)o);
-            } else if (t == typeof(char)) {
-                writer.Write(10);
-                writer.Write((char)o);
-            } else if (t == typeof(byte)) {
-                writer.Write(11);
-                writer.Write((byte)o);
-            } else if (t == typeof(byte[])) {
-                writer.Write(12);
-                writer.Write(((byte[])o).Length);
-                writer.Write((byte[])o);
-            } else {
-                writer.Write(-1);
-            }
-        }
-        */
+        
         ~Writer() {
             Dispose();
         }
@@ -980,5 +746,5 @@ namespace HBS {
             GC.SuppressFinalize(this);
         }
     }
-    
+
 }

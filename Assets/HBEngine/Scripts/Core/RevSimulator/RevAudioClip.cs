@@ -8,7 +8,7 @@ public class RevAudioClip {
 
     public AudioClip clip;
 
-    [HideInInspector]
+    [System.NonSerialized]
     public float[] samples;
 
     public string name;
@@ -33,7 +33,7 @@ public class RevAudioClip {
     public void BakeAudioClip() {
 
         if (clip == null) {
-            Debug.LogError("RevAudioClip: clip is null, can't bake it");
+            Debug.LogError("RevAudioClip: clip is null, can't bake it, possibly its already baked!");
             return;
         }
         if (clip.length * 0.5f > 15f) {

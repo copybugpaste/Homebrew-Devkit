@@ -354,9 +354,7 @@ public static class MeshUtilities {
 
         mesh.tangents = tangents;
     }
-
-    /* Fill arrays MUCH faster */
-
+    
     public static void ArrayFill<T>(T[] arrayToFill, T fillValue) {
         // if called with a single value, wrap the value in an array and call the main function
         ArrayFill<T>(arrayToFill, new T[] { fillValue });
@@ -389,8 +387,7 @@ public static class MeshUtilities {
     private static List<Vector2> B_uv0 = new List<Vector2>();
     private static List<Vector2> B_uv1 = new List<Vector2>();
     private static List<Color> B_colors = new List<Color>();
-
-
+    
     public struct MeshMatrix {
         public Mesh mesh;
         public Matrix4x4 matrix;
@@ -568,6 +565,7 @@ public static class MeshUtilities {
 
         if (string.IsNullOrEmpty(path)) { yield break; }
         if (System.IO.File.Exists(path) == false) { yield break; }
+        
         using (var fileReader = File.Open(path, FileMode.Open)) {
             using (var reader = new BinaryReader(fileReader)) {
                 string name = "";
@@ -757,7 +755,7 @@ public static class MeshUtilities {
             }
         }
     }
-
+    
     public static IEnumerator SaveH3dAsync( Mesh m, System.Action<MemoryStream> onReturn) {
 
         yield return Ninja.JumpToUnity;
@@ -981,6 +979,229 @@ public static class MeshUtilities {
       
     }
 
+    public static IEnumerator SaveH3dAsyncToFile(string path , Mesh m) {
+
+        yield return Ninja.JumpToUnity;
+
+        if (m == null) {
+            yield break;
+        }
+
+        var vertices = m.vertices;
+        var normals = m.normals;
+        var tangents = m.tangents;
+        var colors = m.colors;
+        var uv = m.uv;
+        var uv2 = m.uv2;
+        var uv3 = m.uv3;
+        var uv4 = m.uv4;
+        var subMeshCount = m.subMeshCount;
+        var subMeshTriangles = new List<int[]>();
+
+        for (var i = 0; i < subMeshCount; i++) {
+            subMeshTriangles.Add(m.GetTriangles(i));
+        }
+
+        var boneWeights = m.boneWeights;
+
+        var bindposes = m.bindposes;
+        var blendShapeCount = m.blendShapeCount;
+        var blendShapeNames = new List<string>();
+        var blendShapeFrameCounts = new List<int>();
+        var blendShapeFrameWeights = new List<List<float>>();
+        var blendShapedeltaVertices = new List<List<Vector3[]>>();
+        var blendShapedeltaNormals = new List<List<Vector3[]>>();
+        var blendShapedeltaTangents = new List<List<Vector3[]>>();
+        for (var i = 0; i < blendShapeCount; i++) {
+
+            blendShapeNames.Add(m.GetBlendShapeName(i));
+
+            var count = m.GetBlendShapeFrameCount(i);
+            blendShapeFrameCounts.Add(count);
+
+            blendShapeFrameWeights.Add(new List<float>());
+            blendShapedeltaVertices.Add(new List<Vector3[]>());
+            blendShapedeltaNormals.Add(new List<Vector3[]>());
+            blendShapedeltaTangents.Add(new List<Vector3[]>());
+
+            for (var o = 0; o < count; o++) {
+
+                var deltaVertices = new Vector3[m.vertexCount];
+                var deltaNormals = new Vector3[m.vertexCount];
+                var deltaTangents = new Vector3[m.vertexCount];
+                m.GetBlendShapeFrameVertices(i, o, deltaVertices, deltaNormals, deltaTangents);
+
+                blendShapeFrameWeights[i].Add(m.GetBlendShapeFrameWeight(i, o));
+                blendShapedeltaVertices[i].Add(deltaVertices);
+                blendShapedeltaNormals[i].Add(deltaNormals);
+                blendShapedeltaTangents[i].Add(deltaTangents);
+            }
+        }
+        var vertexCount = m.vertexCount;
+
+        yield return Ninja.JumpBack;
+
+        using (var filestream = File.Open(path, FileMode.Create)) {
+            using (var writer = new BinaryWriter(filestream)) {
+                writer.Write("vertices");
+                writer.Write(vertices.Length);
+                foreach (Vector3 vert in vertices) {
+                    writer.Write(vert.x);
+                    writer.Write(vert.y);
+                    writer.Write(vert.z);
+                }
+
+                writer.Write("normals");
+                writer.Write(normals.Length);
+                foreach (Vector3 norm in normals) {
+                    writer.Write(norm.x);
+                    writer.Write(norm.y);
+                    writer.Write(norm.z);
+                }
+
+                writer.Write("tangents");
+                writer.Write(tangents.Length);
+                foreach (Vector4 tang in tangents) {
+                    writer.Write(tang.x);
+                    writer.Write(tang.y);
+                    writer.Write(tang.z);
+                    writer.Write(tang.w);
+                }
+
+                writer.Write("colors");
+                writer.Write(colors.Length);
+                foreach (Color col in colors) {
+                    writer.Write(col.r);
+                    writer.Write(col.g);
+                    writer.Write(col.b);
+                    writer.Write(col.a);
+                }
+
+                writer.Write("uv");
+                writer.Write(uv.Length);
+                foreach (Vector2 _uv in uv) {
+                    writer.Write(_uv.x);
+                    writer.Write(_uv.y);
+                }
+
+                writer.Write("uv2");
+                writer.Write(uv2.Length);
+                foreach (Vector2 _uv in uv2) {
+                    writer.Write(_uv.x);
+                    writer.Write(_uv.y);
+                }
+
+                writer.Write("uv3");
+                writer.Write(uv3.Length);
+                foreach (Vector2 _uv in uv3) {
+                    writer.Write(_uv.x);
+                    writer.Write(_uv.y);
+                }
+
+                writer.Write("uv4");
+                writer.Write(uv4.Length);
+                foreach (Vector2 _uv in uv4) {
+                    writer.Write(_uv.x);
+                    writer.Write(_uv.y);
+                }
+
+                writer.Write("SubMeshCount");
+                writer.Write(subMeshCount);
+
+                for (int i = 0; i < subMeshCount; i++) {
+                    writer.Write("triangles" + i.ToString());
+                    int[] tris = subMeshTriangles[i];// GetTriangles(i);
+                    writer.Write(tris.Length);
+                    foreach (int tri in tris) {
+                        writer.Write(tri);
+                    }
+                }
+
+                writer.Write("bindposes");
+                writer.Write(bindposes.Length);
+                foreach (Matrix4x4 bp in bindposes) {
+                    Vector4 colm0 = bp.GetColumn(0);
+                    writer.Write(colm0.x);
+                    writer.Write(colm0.y);
+                    writer.Write(colm0.z);
+                    writer.Write(colm0.w);
+
+                    Vector4 colm1 = bp.GetColumn(1);
+                    writer.Write(colm1.x);
+                    writer.Write(colm1.y);
+                    writer.Write(colm1.z);
+                    writer.Write(colm1.w);
+
+                    Vector4 colm2 = bp.GetColumn(2);
+                    writer.Write(colm2.x);
+                    writer.Write(colm2.y);
+                    writer.Write(colm2.z);
+                    writer.Write(colm2.w);
+
+                    Vector4 colm3 = bp.GetColumn(3);
+                    writer.Write(colm3.x);
+                    writer.Write(colm3.y);
+                    writer.Write(colm3.z);
+                    writer.Write(colm3.w);
+                }
+
+                writer.Write("boneWeights");
+                writer.Write(boneWeights.Length);
+                foreach (BoneWeight bw in boneWeights) {
+                    writer.Write(bw.boneIndex0);
+                    writer.Write(bw.boneIndex1);
+                    writer.Write(bw.boneIndex2);
+                    writer.Write(bw.boneIndex3);
+
+                    writer.Write(bw.weight0);
+                    writer.Write(bw.weight1);
+                    writer.Write(bw.weight2);
+                    writer.Write(bw.weight3);
+                }
+
+                writer.Write("blendShapes");
+                writer.Write(blendShapeCount);
+                for (int i = 0; i < blendShapeCount; i++) {
+                    writer.Write(blendShapeNames[i]);
+                    int frameCount = blendShapeFrameCounts[i];// GetBlendShapeFrameCount(i);
+                    writer.Write("frame");
+                    writer.Write(frameCount);
+                    for (int o = 0; o < frameCount; o++) {
+                        writer.Write("frameWeight");
+                        writer.Write(blendShapeFrameWeights[i][o]);
+
+                        writer.Write("deltaVertices");
+                        writer.Write(blendShapedeltaVertices[i][o].Length);
+                        foreach (Vector3 deltaVert in blendShapedeltaVertices[i][o]) {
+                            writer.Write(deltaVert.x);
+                            writer.Write(deltaVert.y);
+                            writer.Write(deltaVert.z);
+                        }
+
+                        writer.Write("deltaNormals");
+                        writer.Write(blendShapedeltaNormals[i][o].Length);
+                        foreach (Vector3 deltaNorm in blendShapedeltaNormals[i][o]) {
+                            writer.Write(deltaNorm.x);
+                            writer.Write(deltaNorm.y);
+                            writer.Write(deltaNorm.z);
+                        }
+
+                        writer.Write("deltaTangents");
+                        writer.Write(blendShapedeltaTangents[i][o].Length);
+                        foreach (Vector3 deltaTang in blendShapedeltaTangents[i][o]) {
+                            writer.Write(deltaTang.x);
+                            writer.Write(deltaTang.y);
+                            writer.Write(deltaTang.z);
+                        }
+                    }
+                }
+            }
+
+            yield return Ninja.JumpToUnity;
+        }
+
+    }
+    
     public static void LoadH3dOntoMesh(string path, Mesh ret) {
         if (string.IsNullOrEmpty(path)) { return; }
         if (System.IO.File.Exists(path) == false) { return; }
@@ -1513,6 +1734,7 @@ public static class MeshUtilities {
         stream.Close();
         return ret;
     }
+    
 }
 
 

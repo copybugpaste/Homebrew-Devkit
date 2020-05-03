@@ -7,9 +7,10 @@ using UnityEngine;
 using CielaSpike;
 
 public static class RevAudioClipUtilities {
+
     public static string CalcHash( RevAudioClip clip ) {
         var data = new byte[120];
-        if( clip.samples != null ) {
+        if( clip.samples != null && clip.samples.Length > 0) {
             for ( var i = 0; i < 120; i+=4) {
                 var x = Mathf.FloorToInt(((float)i / 120f) * (float)clip.samples.Length);
                 var sample = BitConverter.GetBytes(clip.samples[x]);
@@ -24,11 +25,13 @@ public static class RevAudioClipUtilities {
         var hex = BitConverter.ToString(md);
         return "revaudioclip_"+hex.Replace("-", "");
     }
-	public static RevAudioClip LoadHra( string path ) {
+
+    public static RevAudioClip LoadHra( string path ) {
         RevAudioClip clip = new RevAudioClip();
         LoadHraOntoRevAudioClip(path, clip);
         return clip;
     }
+
     public static void LoadHraOntoRevAudioClip(string path, RevAudioClip clip) {
         if (string.IsNullOrEmpty(path)) { return; }
         if (System.IO.File.Exists(path) == false) { return; }
@@ -48,6 +51,7 @@ public static class RevAudioClipUtilities {
         }
         clip.SetReady();
     }
+
     public static IEnumerator LoadHraOntoRevAudioClipAsync(string path, RevAudioClip clip) {
         yield return Ninja.JumpBack;
 
@@ -72,6 +76,7 @@ public static class RevAudioClipUtilities {
         clip.SetReady();
         
     }
+
     public static void SaveHra(RevAudioClip clip, string path) {
         if (clip == null) { return; }
         
@@ -91,13 +96,20 @@ public static class RevAudioClipUtilities {
             }
         }
     }
+
     public static IEnumerator SaveHraAsync(RevAudioClip clip, System.Action<MemoryStream> onReturn) {
+        yield return Ninja.JumpToUnity;
+
+        if (clip == null) { Debug.Log("SaveHraAsync: RevAudioClip is null"); yield break; }
+
         yield return Ninja.JumpBack;
-        if (clip == null) { Debug.Log("tf"); yield break; }
+
         using (var filestream = new MemoryStream()) {
             using (var writer = new BinaryWriter(filestream)) {
+
                 writer.Write(clip.samples != null);
-                if ( clip.samples == null ) { yield break; }
+
+                if ( clip.samples == null ) { Debug.Log("SaveHraAsync: RevAudioClip.samples is null"); yield break; }
 
                 if ( string.IsNullOrEmpty(clip.name)) { clip.name = "revclip"; }
                 writer.Write(clip.length);
@@ -113,4 +125,35 @@ public static class RevAudioClipUtilities {
         }
 
     }
+
+    public static IEnumerator SaveHraAsyncToFile(string path,RevAudioClip clip) {
+
+        yield return Ninja.JumpToUnity;
+
+        if (clip == null) { Debug.Log("SaveHraAsyncToFile: RevAudioClip is null"); yield break; }
+
+        yield return Ninja.JumpBack;
+        
+        using (var filestream = File.Open(path, FileMode.Create)) {
+            using (var writer = new BinaryWriter(filestream)) {
+
+                writer.Write(clip.samples != null);
+
+                if (clip.samples == null) { Debug.Log("SaveHraAsyncToFile: RevAudioClip.samples is null"); yield break; }
+
+                if (string.IsNullOrEmpty(clip.name)) { clip.name = "revclip"; }
+                writer.Write(clip.length);
+                writer.Write(clip.channels);
+                writer.Write(clip.name);
+                writer.Write(clip.sampleCount);
+                writer.Write(clip.samples.Length);
+                for (var i = 0; i < clip.samples.Length; i++) {
+                    writer.Write(clip.samples[i]);
+                }
+            }
+        }
+
+        yield return Ninja.JumpToUnity;
+    }
+
 }

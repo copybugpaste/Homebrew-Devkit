@@ -36,36 +36,42 @@ namespace HBWorld {
             return final.ToArray();
         }
 
-        [MenuItem("Homebrew/Asset/Import/Part")]
+        [MenuItem("Homebrew/Asset/Import/HBP")]
         public static void ImportGameObject() {
             string path = UnityEditor.EditorUtility.OpenFilePanel("open part", Application.streamingAssetsPath + "/Assets/GameObjects/", "hbp");
             if (path == "") { return; }
-            GameObject o = AssetManager.InstantiateAsset(path);
+            GameObject o = HBS.AssetManager.GameSpecifics.Instantiate(path);
             o.transform.position = Vector3.zero;
             o.transform.rotation = Quaternion.identity;
 
         }
         [MenuItem("Homebrew/Asset/Export Selected/Part")]
         public static void ExportGameObject() {
-            if (UnityEditor.Selection.gameObjects.Length == 0) { return; }
+            if (UnityEditor.Selection.gameObjects.Length == 0) { Debug.LogError("Nothing selected"); return; }
+            var part = UnityEditor.Selection.gameObjects[0].GetComponentInChildren<PartContainer>();
+            if (part == null) { Debug.LogError("no PartContainerin selection"); return; }
             string path = UnityEditor.EditorUtility.SaveFilePanel("save part", Application.streamingAssetsPath + "/Assets/GameObjects/", "untitled", "hbp");
             if (path == "") { return; }
-            AssetManager.SaveAsset(path, "Part", UnityEditor.Selection.activeGameObject);
+            HBS.AssetManager.GameSpecifics.Save(path, "Part", UnityEditor.Selection.activeGameObject);
 
         }
         [MenuItem("Homebrew/Asset/Export Selected/EngineAudio")]
         public static void ExportRev() {
-            if (UnityEditor.Selection.gameObjects.Length == 0) { return; }
+            if (UnityEditor.Selection.gameObjects.Length == 0) { Debug.LogError("Nothing selected"); return; }
+            var engineAudioClip = UnityEditor.Selection.gameObjects[0].GetComponentInChildren<EngineAudioClip>();
+            if (engineAudioClip == null) { Debug.LogError("no engine audio clip in selection"); return; }
+            if(EditorApplication.isPlaying == false) { Debug.LogError("must export while in play mode"); return; }
+            engineAudioClip.BakeAudioClips();
             var assetPath = UnityEditor.EditorUtility.SaveFilePanel("save engine audio", Application.streamingAssetsPath + "/Assets/GameObjects/", "untitled", "hbp");
             if (assetPath == "") { return; }
-            AssetManager.SaveAsset(assetPath, "EngineAudio", UnityEditor.Selection.activeGameObject);
+            HBS.AssetManager.GameSpecifics.Save(assetPath, "EngineAudio", UnityEditor.Selection.activeGameObject);
         }
         [MenuItem("Homebrew/Asset/Export Selected/World")]
         public static void ExportWorldAsset() {
             if (UnityEditor.Selection.gameObjects.Length == 0) { return; }
             var assetPath = UnityEditor.EditorUtility.SaveFilePanel("save world asset", Application.streamingAssetsPath + "/Assets/GameObjects/", "untitled", "hbp");
             if (assetPath == "") { return; }
-            AssetManager.SaveAsset(assetPath, "WorldAsset", UnityEditor.Selection.activeGameObject);
+            HBS.AssetManager.GameSpecifics.Save(assetPath, "WorldAsset", UnityEditor.Selection.activeGameObject);
 
             var name = System.IO.Path.GetFileNameWithoutExtension(assetPath);
             var position = UnityEditor.Selection.activeGameObject.transform.position;
@@ -89,10 +95,10 @@ namespace HBWorld {
             //update meta file next to asset
             var metaPath = GetMetaPath(assetPath);
 
-            CreatMetaFile(name,id, x, y, z, rx, ry, rz, sx, sy, sz, objectSize, range, metaPath, "pinned from devkit");
-           
+            CreatMetaFile(name, id, x, y, z, rx, ry, rz, sx, sy, sz, objectSize, range, metaPath, "pinned from devkit");
+
         }
-        
+
         public static double sectorSize { get { return 6000d; } }
 
         static string GetMetaPath(string p) {

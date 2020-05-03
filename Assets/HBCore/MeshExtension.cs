@@ -7,73 +7,108 @@ using CielaSpike;
 
 namespace HBS {
     public static class MeshExtension {
+
         public static Dictionary<string, Mesh> cacheNoClear = new Dictionary<string, Mesh>();
-        public static string savePath;
-        public static bool async = false;
-        public static Dictionary<string, Mesh> asyncTodo = new Dictionary<string, Mesh>();
-        
-        public static void SaveMesh(HBS.Writer writer , object oo) {
-            if( writer.WriteNull(oo)) { return; }
 
-            var o = (Mesh)oo;
-            var path = "";
+        public static void SaveMeshAsync(Writer writer, string workPath, object o, ref Dictionary<string, Mesh> asynclist) {
+            if (writer.WriteNull(o)) { return; }
 
-            if (async) {
-                path = savePath + "/" + o.name + ".h3d";
-                writer.Write(o.name);
-
-                if (asyncTodo.ContainsKey(path) == false) {
-                    asyncTodo.Add(path, (Mesh)o);
-                }
-
-                return;
-            }
-
-            var hash = MeshUtilities.CalcHash(o);
+            var oo = (Mesh)o;
+            var hash = MeshUtilities.CalcHash(oo);
             writer.Write(hash);
-            path = savePath + "/" + hash + ".h3d";
-            
-            if (File.Exists(path) == false) {
-                MeshUtilities.SaveH3d(o, path);
+            var path = workPath + "/" + hash + ".h3d";
+
+            if (asynclist.ContainsKey(path) == false) {
+                asynclist.Add(path, oo);
             }
-            
+
         }
-        
-        public static object LoadMesh(HBS.Reader reader, Type t, object oo = null) {
-            
+
+        public static void SaveMesh(Writer writer, string workPath, object o) {
+            if (writer.WriteNull(o)) { return; }
+
+            var oo = (Mesh)o;
+            var hash = MeshUtilities.CalcHash(oo);
+            writer.Write(hash);
+            var path = workPath + "/" + hash + ".h3d";
+
+            if (File.Exists(path) == false) {
+                MeshUtilities.SaveH3d(oo, path);
+            }
+
+        }
+
+        public static object LoadMeshAsync(Reader reader, string workPath, ref Dictionary<string, Mesh> asynclist) {
+
             if (reader.ReadNull()) { return null; }
+
             var hash = (string)reader.Read();
-            
-            if (cacheNoClear.ContainsKey(hash) && cacheNoClear[hash] != null) {
+
+            Mesh o = null; 
+            if (FindInCache(hash, out o)) {
                 return cacheNoClear[hash];
             }
 
-            var path = savePath + "/" + hash + ".h3d";
+            o = new Mesh { name = hash };
+            var p = workPath + "/" + hash + ".h3d";
+            
+            if (asynclist.ContainsKey(p) == false) {
+                asynclist.Add(p, o);
+            }
+
+            AddToCache(hash, o);
+
+            return o;
+        }
+
+        public static object LoadMesh(string workPath, Reader reader, Type t, object oo = null) {
+
+            if (reader.ReadNull()) { return null; }
+            var hash = (string)reader.Read();
 
             Mesh o = null;
-            if (async) {
-                o = new Mesh {
-                    name = hash + "_async"
-                };
-                asyncTodo.Add(path, o);
-            } else {
-                o = MeshUtilities.LoadH3d(path);
-                o.name = hash;
+
+            if (FindInCache(hash, out o)) {
+                return o;
             }
+
+            var path = workPath + "/" + hash + ".h3d";
             
+            o = MeshUtilities.LoadH3d(path);
+            o.name = hash;
+
+            AddToCache(hash, o);
+            
+            return o;
+
+        }
+
+        private static bool FindInCache(string hash , out Mesh o ) {
+            o = null;
+            if( cacheNoClear == null ) { return false; }
+
+            if (cacheNoClear.ContainsKey(hash) && cacheNoClear[hash] != null) {
+                o = cacheNoClear[hash];
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void AddToCache(string hash, Mesh o ) {
+
+            if(cacheNoClear == null ) { cacheNoClear = new Dictionary<string, Mesh>(); }
+
             if (cacheNoClear.ContainsKey(hash)) {
                 cacheNoClear[hash] = o;
             } else {
                 cacheNoClear.Add(hash, o);
             }
-            
+
             if (cacheNoClear.Count > 10000) {
                 cacheNoClear.Clear();
             }
 
-            return o;
-            
         }
-
     }
 }

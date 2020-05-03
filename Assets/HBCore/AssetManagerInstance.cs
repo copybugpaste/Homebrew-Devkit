@@ -1,34 +1,26 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using System.IO;
-using System.Xml.Linq;
 using CielaSpike;
-using System.Linq;
 
-
-namespace HBWorld { 
+namespace HBS { 
     public class AssetManagerInstance : MonoBehaviour {
 
-        private Task runQueue;
+        private Task schedulerRunTask;
 
-        //start async que
         void Awake() {
             AssetManager.instance = this;
-            HBS.Serializer.LoadExtensions();
-            this.StartCoroutineAsync(AssetManager.RunQue(), out runQueue);
+            this.StartCoroutineAsync(AssetManager.Scheduler.RunSchedule(), out schedulerRunTask);
         }
 
         void OnDestroy() {
             AssetManager.instance = null;
         }
-
-        //keep async que alive
+        
         private void Update() {
-            if (runQueue != null) {
-                if(runQueue.Exception != null) {
-                    Debug.LogErrorFormat("[AssetManagerInstance] ERROR: {0}", runQueue.Exception);
-                    this.StartCoroutineAsync(AssetManager.RunQue(), out runQueue);
+            if (schedulerRunTask != null) {
+                if (schedulerRunTask.Exception != null) {
+                    Debug.LogErrorFormat("[AssetManagerInstance] ERROR: {0}", schedulerRunTask.Exception);
+                    this.StartCoroutineAsync(AssetManager.Scheduler.RunSchedule(), out schedulerRunTask);
                 }
             }
         }
