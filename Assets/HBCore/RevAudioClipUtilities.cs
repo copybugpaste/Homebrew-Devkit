@@ -49,10 +49,15 @@ public static class RevAudioClipUtilities {
                 }
             }
         }
-        clip.SetReady();
+        //clip.SetReady();
     }
 
     public static IEnumerator LoadHraOntoRevAudioClipAsync(string path, RevAudioClip clip) {
+
+        yield return Ninja.JumpToUnity;
+
+        clip.loading = true;
+
         yield return Ninja.JumpBack;
 
         if (string.IsNullOrEmpty(path)) { yield break; }
@@ -73,7 +78,11 @@ public static class RevAudioClipUtilities {
                 }
             }
         }
-        clip.SetReady();
+
+        yield return Ninja.JumpToUnity;
+
+        clip.loading = false;
+        //clip.SetReady();
         
     }
 

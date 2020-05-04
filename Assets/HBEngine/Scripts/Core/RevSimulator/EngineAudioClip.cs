@@ -72,13 +72,11 @@ public class EngineAudioClip : MonoBehaviour {
 
     [Header("References")]
     public AudioSource source;
-
-#if UNITY_EDITOR
+    
     [Header("Visual Help")]
     public bool showHelpers = true;
     public float helperIdleRPM = 830;
     public float helperRedlineRPM = 8300;
-#endif
 
     private AudioEntry activeEntryA = null;
     private AudioEntry activeEntryB = null;
@@ -108,29 +106,11 @@ public class EngineAudioClip : MonoBehaviour {
             a.BakeAudioClip();
         }
     }
-
-    [ContextMenu("Set Ready")]
-    public void SetReady() {
-        var aa = GetAllAduioEntries();
-        foreach( var a in aa ) {
-            if (a == null || a.clip == null) { continue; }
-            a.SetReady();
-        }
-    }
-
-    private void ApplyRevAudioClips() {
-        var aa = GetAllAduioEntries();
-        foreach (var a in aa) {
-            if (a == null || a.clip == null) { continue; }
-            a.ApplyRevAudioClip();
-        }
-    }
-
+    
     private bool CheckReady() {
         var aa = GetAllAduioEntries();
         foreach (var a in aa) {
-            if (a == null || a.clip == null) { continue; }
-            if ( a.clip.isReady ==  false ) { return false; }
+            if( a == null || a.clip == null || a.clip.samples == null || a.clip.samples.Length == 0 || a.clip.loading) { return false; }
         }
         return true;
     }
@@ -185,7 +165,6 @@ public class EngineAudioClip : MonoBehaviour {
             ready = CheckReady();
             if (ready) {
                 audioStartTime = AudioSettings.dspTime + 1.5f;
-                ApplyRevAudioClips();
             }
             return;
         }
@@ -668,21 +647,13 @@ public class EngineAudioClip : MonoBehaviour {
         public float startPitch = 1f;
         [Range(0.2f, 4)]
         public float endPitch = 1f;
-
-        [System.NonSerialized]
-        public float[] samples;
-        [System.NonSerialized]
-        public double sampleCount = 0;
-        [System.NonSerialized]
-        public int channels = 1;
+        
         [System.NonSerialized]
         public float weight = 0f;
         [System.NonSerialized]
         public double pitch = 0f;
         [System.NonSerialized]
         public double position = 0f;
-        [System.NonSerialized]
-        public double length = 0f;
         [System.NonSerialized]
         public double oneShotTime = 0d;
         [System.NonSerialized]
@@ -693,29 +664,17 @@ public class EngineAudioClip : MonoBehaviour {
             clip.BakeAudioClip();
 
         }
-
-        public void SetReady() {
-            clip.SetReady();
-        }
-
-        public void ApplyRevAudioClip() {
-
-            samples = clip.samples;
-            sampleCount = clip.sampleCount;
-            channels = clip.channels;
-            length = clip.length;
-        }
-
+        
         public float GetSample(int channel) {
-            if (channel > channels - 1) { channel = channels - 1; }
-            if (samples == null) {
+            if (channel > clip.channels - 1) { channel = clip.channels - 1; }
+            if (clip.samples == null) {
                 return 0f;
             }
-            return samples[(int)(System.Math.Floor(position * channels) + channel) % (int)sampleCount] * weight * Mathf.Sqrt(Mathf.Clamp01(volume));
+            return clip.samples[(int)(System.Math.Floor(position * clip.channels) + channel) % (int)clip.sampleCount] * weight * Mathf.Sqrt(Mathf.Clamp01(volume));
         }
 
         public void PlayOneShot() {
-            oneShotTime = AudioSettings.dspTime + (length * 0.5d);
+            oneShotTime = AudioSettings.dspTime + (clip.length * 0.5d);
         }
         public void HandleOneShotOnAudioThread() {
             if (AudioSettings.dspTime < oneShotTime) {

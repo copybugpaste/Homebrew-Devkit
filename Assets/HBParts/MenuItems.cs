@@ -40,7 +40,7 @@ namespace HBWorld {
         public static void ImportGameObject() {
             string path = UnityEditor.EditorUtility.OpenFilePanel("open part", Application.streamingAssetsPath + "/Assets/GameObjects/", "hbp");
             if (path == "") { return; }
-            GameObject o = HBS.AssetManager.GameSpecifics.Instantiate(path);
+            GameObject o = HBS.AssetManager.Instantiate(path);
             o.transform.position = Vector3.zero;
             o.transform.rotation = Quaternion.identity;
 
@@ -52,7 +52,7 @@ namespace HBWorld {
             if (part == null) { Debug.LogError("no PartContainerin selection"); return; }
             string path = UnityEditor.EditorUtility.SaveFilePanel("save part", Application.streamingAssetsPath + "/Assets/GameObjects/", "untitled", "hbp");
             if (path == "") { return; }
-            HBS.AssetManager.GameSpecifics.Save(path, "Part", UnityEditor.Selection.activeGameObject);
+            HBS.AssetManager.Save(path, "Part", UnityEditor.Selection.activeGameObject);
 
         }
         [MenuItem("Homebrew/Asset/Export Selected/EngineAudio")]
@@ -64,14 +64,14 @@ namespace HBWorld {
             engineAudioClip.BakeAudioClips();
             var assetPath = UnityEditor.EditorUtility.SaveFilePanel("save engine audio", Application.streamingAssetsPath + "/Assets/GameObjects/", "untitled", "hbp");
             if (assetPath == "") { return; }
-            HBS.AssetManager.GameSpecifics.Save(assetPath, "EngineAudio", UnityEditor.Selection.activeGameObject);
+            HBS.AssetManager.Save(assetPath, "EngineAudio", UnityEditor.Selection.activeGameObject);
         }
         [MenuItem("Homebrew/Asset/Export Selected/World")]
         public static void ExportWorldAsset() {
             if (UnityEditor.Selection.gameObjects.Length == 0) { return; }
             var assetPath = UnityEditor.EditorUtility.SaveFilePanel("save world asset", Application.streamingAssetsPath + "/Assets/GameObjects/", "untitled", "hbp");
             if (assetPath == "") { return; }
-            HBS.AssetManager.GameSpecifics.Save(assetPath, "WorldAsset", UnityEditor.Selection.activeGameObject);
+            HBS.AssetManager.Save(assetPath, "WorldAsset", UnityEditor.Selection.activeGameObject);
 
             var name = System.IO.Path.GetFileNameWithoutExtension(assetPath);
             var position = UnityEditor.Selection.activeGameObject.transform.position;
@@ -96,6 +96,39 @@ namespace HBWorld {
             var metaPath = GetMetaPath(assetPath);
 
             CreatMetaFile(name, id, x, y, z, rx, ry, rz, sx, sy, sz, objectSize, range, metaPath, "pinned from devkit");
+
+        }
+
+        [MenuItem("Homebrew/Asset/Export Selected/World (Additive)")]
+        public static void ExportWorldAssetAdditive() {
+            if (UnityEditor.Selection.gameObjects.Length == 0) { return; }
+            var assetPath = UnityEditor.EditorUtility.SaveFilePanel("save world asset", Application.streamingAssetsPath + "/Assets/GameObjects/", "untitled", "hbp");
+            if (assetPath == "") { return; }
+            HBS.AssetManager.Save(assetPath, "WorldAsset", UnityEditor.Selection.activeGameObject);
+
+            var name = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+            var position = UnityEditor.Selection.activeGameObject.transform.position;
+            var eulerAngles = UnityEditor.Selection.activeGameObject.transform.eulerAngles;
+            var scale = UnityEditor.Selection.activeGameObject.transform.localScale;
+            var x = (double)position.x;
+            var y = (double)position.y;
+            var z = (double)position.z;
+            var rx = eulerAngles.x;
+            var ry = eulerAngles.y;
+            var rz = eulerAngles.z;
+            var sx = scale.x;
+            var sy = scale.y;
+            var sz = scale.z;
+            var size = GetGameObjectBounds(UnityEditor.Selection.activeGameObject).size;
+            var objectSize = Mathf.Max(size.x, size.y, size.z);
+
+            var range = (double)GetLOD2Range(objectSize * 0.5f) + sectorSize * 0.5d;
+            var id = GetNewID();//create new pin id
+
+            //update meta file next to asset
+            var metaPath = GetMetaPath(assetPath);
+
+            AddToMetaFile(name, id, x, y, z, rx, ry, rz, sx, sy, sz, objectSize, range, metaPath, "pinned from devkit");
 
         }
 

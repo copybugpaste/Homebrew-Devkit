@@ -8,6 +8,7 @@ public class RevAudioClip {
 
     public AudioClip clip;
 
+    [HideInInspector]
     [System.NonSerialized]
     public float[] samples;
 
@@ -15,21 +16,10 @@ public class RevAudioClip {
     public float length;
     public int channels;
     public int sampleCount;
+
+    [System.NonSerialized]
+    public bool loading = false;
     
-    public bool isReady {
-        get {
-            return _isReady;
-        }
-    }
-    private bool _isReady = false;
-    public System.Action onReady;
-
-    public void SetReady() {
-        
-        _isReady = true;
-        if( onReady != null ) { onReady(); }
-    }
-
     public void BakeAudioClip() {
 
         if (clip == null) {
@@ -47,7 +37,6 @@ public class RevAudioClip {
         channels = clip.channels;
         length = clip.length;
         name = clip.name;
-        SetReady();
 
     }
 

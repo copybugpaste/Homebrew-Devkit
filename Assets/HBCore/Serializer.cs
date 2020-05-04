@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 #if UNITY_EDITOR
 #endif
@@ -28,6 +29,13 @@ namespace HBS {
         public static bool debug = false;
         public static int prefix = 1;
         public static string persistentDataPath;
+        private static int seed {
+            get {
+                return Environment.TickCount * Thread.CurrentThread.ManagedThreadId;
+            }
+        }
+        public static char[] letters = new char[26] { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+        private static readonly ThreadLocal<System.Random> random = new ThreadLocal<System.Random>(() => new System.Random(seed));
 
         public static SerializerInstance instance;
         public static MethodInfo serializeMethod;
@@ -198,9 +206,6 @@ namespace HBS {
                 Debug.LogWarning(o);
             }
         }
-        public static string GetRandomID() {
-            return HBWorld.MenuItems.GetNewID();
-        }
         public static bool DeleteCacheFolder(string path) {
             if (cacheFolders.Contains(path)) {
                 Directory.Delete(path, true);
@@ -224,6 +229,44 @@ namespace HBS {
         }
         public static string WashPath(System.Object o) {
             return "";
+        }
+
+        public static string GetRandomID() {
+            var length = letters.Length;
+            var ret = new char[32];
+            ret[00] = letters[random.Value.Next(0, length)];
+            ret[01] = letters[random.Value.Next(0, length)];
+            ret[02] = letters[random.Value.Next(0, length)];
+            ret[03] = letters[random.Value.Next(0, length)];
+            ret[04] = letters[random.Value.Next(0, length)];
+            ret[05] = letters[random.Value.Next(0, length)];
+            ret[06] = letters[random.Value.Next(0, length)];
+            ret[07] = letters[random.Value.Next(0, length)];
+            ret[08] = letters[random.Value.Next(0, length)];
+            ret[09] = letters[random.Value.Next(0, length)];
+            ret[10] = letters[random.Value.Next(0, length)];
+            ret[11] = letters[random.Value.Next(0, length)];
+            ret[12] = letters[random.Value.Next(0, length)];
+            ret[13] = letters[random.Value.Next(0, length)];
+            ret[14] = letters[random.Value.Next(0, length)];
+            ret[15] = letters[random.Value.Next(0, length)];
+            ret[16] = letters[random.Value.Next(0, length)];
+            ret[17] = letters[random.Value.Next(0, length)];
+            ret[18] = letters[random.Value.Next(0, length)];
+            ret[19] = letters[random.Value.Next(0, length)];
+            ret[20] = letters[random.Value.Next(0, length)];
+            ret[21] = letters[random.Value.Next(0, length)];
+            ret[22] = letters[random.Value.Next(0, length)];
+            ret[23] = letters[random.Value.Next(0, length)];
+            ret[24] = letters[random.Value.Next(0, length)];
+            ret[25] = letters[random.Value.Next(0, length)];
+            ret[26] = letters[random.Value.Next(0, length)];
+            ret[27] = letters[random.Value.Next(0, length)];
+            ret[28] = letters[random.Value.Next(0, length)];
+            ret[29] = letters[random.Value.Next(0, length)];
+            ret[30] = letters[random.Value.Next(0, length)];
+            ret[31] = letters[random.Value.Next(0, length)];
+            return new string(ret);
         }
 
         public static void OnApplicationQuit() {

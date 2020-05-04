@@ -33,5 +33,15 @@ public class HBSimpleCombustionEngine : Part {
     [HBS.SerializePartVarAttribute]
     public AudioClip unigniteEngine;
     [HBS.SerializePartVarAttribute]
+    public Single flywheelInertia;
+    [HBS.SerializePartVarAttribute]
+    public Single clutchMaxTorque;
+    [HBS.SerializePartVarAttribute]
+    public Single revSmoothInternalAudioThrottleSpeedFactor;
+    [HBS.SerializePartVarAttribute]
+    public Single revSmoothIneralRPMSpeedFactor;
+    [HBS.SerializePartVarAttribute]
     public Boolean useWWise;
+    [HBS.SerializePartVarAttribute]
+    public Boolean useRev;
 }

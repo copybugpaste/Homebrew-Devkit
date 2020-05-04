@@ -29,7 +29,13 @@ public class HBWeapon : Part {
     [HBS.SerializePartVarAttribute]
     public Boolean enableSABOT;
     [HBS.SerializePartVarAttribute]
-    public Single desiredPenetrationMMRHA;
+    public Single penetrationConstantAP;
+    [HBS.SerializePartVarAttribute]
+    public Single penetrationConstantHE;
+    [HBS.SerializePartVarAttribute]
+    public Single penetrationConstantHEAT;
+    [HBS.SerializePartVarAttribute]
+    public Single penetrationConstantSABOT;
     [HBS.SerializePartVarAttribute]
     public Transform[] rotatables;
     [HBS.SerializePartVarAttribute]

@@ -29,4 +29,14 @@ public class TorqueCurve {
     public Single linearMaxRPM;
     [HBS.SerializePartVarAttribute]
     public Single linearTorque;
+    [HBS.SerializePartVarAttribute]
+    public Boolean useCustom;
+    [HBS.SerializePartVarAttribute]
+    public AnimationCurve customTorqueCurve;
+    [HBS.SerializePartVarAttribute]
+    public Single customIdleRPM;
+    [HBS.SerializePartVarAttribute]
+    public Single customMaxRPM;
+    [HBS.SerializePartVarAttribute]
+    public Single customTorque;
 }
