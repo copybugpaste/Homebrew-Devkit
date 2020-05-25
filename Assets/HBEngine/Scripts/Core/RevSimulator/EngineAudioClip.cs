@@ -98,7 +98,7 @@ public class EngineAudioClip : MonoBehaviour {
         }
     }
 
-    [ContextMenu("Bake Audio")]
+    [ContextMenu("BakeAudioClips")]
     public void BakeAudioClips() {
         var aa = GetAllAduioEntries();
         foreach (var a in aa) {
@@ -115,6 +115,7 @@ public class EngineAudioClip : MonoBehaviour {
         return true;
     }
 
+    [ContextMenu("IgniteEngine")]
     public void IgniteEngine() {
         if (isOn == false) {
             isOn = true;
@@ -123,7 +124,7 @@ public class EngineAudioClip : MonoBehaviour {
             isOnTime = Time.time;
         }
     }
-
+    [ContextMenu("UnIgniteEngine")]
     public void UnIgniteEngine() {
         if (isOn) {
             isOn = false;
