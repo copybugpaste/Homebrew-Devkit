@@ -10,7 +10,15 @@ namespace HBS {
         }
         public static object Res( HBS.Reader reader, object o = null) {
             if(reader.ReadNull()){ return null; }
-            return (object)Resources.Load<UnityEngine.Material>((string)reader.Read());
+            var name = (string)reader.Read();
+            var m = (Material)Resources.Load<UnityEngine.Material>(name);
+            if( m == null ) {
+                m = Resources.Load<Material>("devkitDefaultMaterial");
+                var clone = GameObject.Instantiate(m);
+                clone.name = name;
+                return (object)clone;
+            }
+            return (object)m;
         }
     }
 }
