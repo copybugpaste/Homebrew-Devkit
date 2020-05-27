@@ -211,9 +211,9 @@ public class Part : MonoBehaviour {
     public List<Property> backupProperties = new List<Property>();
     [NonSerialized]
     public bool backedup = false;
-    
-    public void PropertiesToBytes( HBS.Writer writer) {
-        if( properties == null ) { writer.Write(0); return; }
+
+    public void PropertiesToBytes(HBS.Writer writer) {
+        if (properties == null) { writer.Write(0); return; }
         writer.Write(properties.Count);
         foreach (var p in properties) {
             if (p.assetTypes == null) {
@@ -221,7 +221,7 @@ public class Part : MonoBehaviour {
             } else {
                 writer.Write(p.assetTypes.Count);
             }
-            foreach( var at in p.assetTypes ) {
+            foreach (var at in p.assetTypes) {
                 writer.Write((int)at);
             }
 
@@ -242,17 +242,30 @@ public class Part : MonoBehaviour {
             writer.Write(p.thisSingleLink);
             writer.Write(p.data);
             writer.Write(p.assetResourcePath);
+
+            writer.Write(p.inputToOutputProperties.Count);
+            foreach (var e in p.inputToOutputProperties) {
+                if (e.part != null) {
+                    writer.Write(e.GetName());
+                }
+            }
+
+            writer.Write(p.outputToInputProperties.Count);
+            foreach (var e in p.outputToInputProperties) {
+                if (e.part != null) {//coudv been unwelded
+                    writer.Write(e.GetName());
+                }
+            }
         }
     }
-
-    public void BytesToProperties( HBS.Reader reader) {
+    public void BytesToProperties(HBS.Reader reader) {
         properties = new List<Property>();
         var count = (int)reader.Read();
-        for( var i = 0; i < count; i++ ) {
+        for (var i = 0; i < count; i++) {
 
             var assetTypeCount = (int)reader.Read();
             var assetTypes = new List<HBAssetTypes>();
-            for ( var o = 0; o < assetTypeCount; o++) {
+            for (var o = 0; o < assetTypeCount; o++) {
                 assetTypes.Add((HBAssetTypes)(int)reader.Read());
             }
 
@@ -276,6 +289,20 @@ public class Part : MonoBehaviour {
                 data = (string)reader.Read(),
                 assetResourcePath = (string)reader.Read(),
             };
+
+            //HANDLE INPUT/OUTPUT LINKAGE
+            {
+                p.inputToOutputPropertyRefrences = new List<string>();
+                var itoCount = (int)reader.Read();
+                for (var j = 0; j < itoCount; j++) {
+                    p.inputToOutputPropertyRefrences.Add((string)reader.Read());
+                }
+                p.outputToInputPropertyRefrences = new List<string>();
+                var otiCount = (int)reader.Read();
+                for (var j = 0; j < otiCount; j++) {
+                    p.outputToInputPropertyRefrences.Add((string)reader.Read());
+                }
+            }
 
             properties.Add(p);
         }

@@ -488,6 +488,10 @@ using System.Linq;
                 }
                 return part.GetPropertyByName(propertyName);
             }
+
+            public string GetName() {
+                return part.GetComponent<RefrenceID>().ID + "/" + propertyName;
+            }
         }
 
     }
