@@ -45,8 +45,16 @@ namespace HBWorld {
             o.transform.rotation = Quaternion.identity;
 
         }
-        [MenuItem("Homebrew/Asset/Export Selected/Part")]
+        [MenuItem("Homebrew/Asset/Export Selected/GamaObject")]
         public static void ExportGameObject() {
+            if (UnityEditor.Selection.gameObjects.Length == 0) { Debug.LogError("Nothing selected"); return; }
+            string path = UnityEditor.EditorUtility.SaveFilePanel("save gameObject", Application.streamingAssetsPath + "/Assets/GameObjects/", "untitled", "hbp");
+            if (path == "") { return; }
+            HBS.AssetManager.Save(path, "GameObject", UnityEditor.Selection.activeGameObject,false);
+
+        }
+        [MenuItem("Homebrew/Asset/Export Selected/Part")]
+        public static void ExportPart() {
             if (UnityEditor.Selection.gameObjects.Length == 0) { Debug.LogError("Nothing selected"); return; }
             var part = UnityEditor.Selection.gameObjects[0].GetComponentInChildren<PartContainer>();
             if (part == null) { Debug.LogError("no PartContainerin selection"); return; }
